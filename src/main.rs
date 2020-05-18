@@ -1,3 +1,7 @@
+mod parser;
+
+use parser::*;
+
 fn main() {
-    println!("Hello, world!");
+    let compartments = parse_file("N3_6.CNG.swc".to_string());
 }
