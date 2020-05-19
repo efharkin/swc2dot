@@ -1,5 +1,5 @@
 use std::convert::From;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, btree_map::Iter};
 
 use crate::parser::{SWCNeuron, SWCCompartment};
 
@@ -37,6 +37,16 @@ impl From<SWCCompartment> for Vertex {
 
 pub struct Graph {
     vertices: BTreeMap<usize, Vertex>
+}
+
+impl Graph {
+    pub fn iter(&self) -> Iter<usize, Vertex> {
+        self.vertices.iter()
+    }
+
+    pub fn len(&self) -> usize {
+        self.vertices.len()
+    }
 }
 
 impl From<SWCNeuron> for Graph {
