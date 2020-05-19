@@ -1,7 +1,7 @@
 use std::convert::From;
 use std::collections::{BTreeMap, btree_map::Iter};
 
-use crate::parser::{SWCNeuron, SWCCompartment};
+use crate::swc_parser::{SWCNeuron, SWCCompartment};
 
 pub struct Vertex {
     data: SWCCompartment,
