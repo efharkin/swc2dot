@@ -2,13 +2,35 @@
 
 # swc2dot
 
-A simple command line tool for converting neuron morphologies in
-SWC format to DOT graph description language.
+A simple command line tool for converting neuron morphologies in SWC format to
+DOT graph description language.
+
+## Description
+
+Neurons have complex and
+[beautiful](https://www.nytimes.com/2018/01/18/arts/design/brain-neuroscience-santiago-ramon-y-cajal-grey-gallery.html)
+dendritic arbours that capture synaptic inputs and shape their functional
+properties. The SWC file format
+[widely](https://alleninstitute.github.io/AllenSDK/cell_types.html#morphology-swc-files)
+[used](http://www.neuromorpho.org) to register dendritic morphology is simpler
+and [not as
+beautiful](http://www.neuronland.org/NLMorphologyConverter/MorphologyFormats/SWC/Spec.html).
+
+The SWC format provides a minimal description of the morphology of a neuron as
+an acyclic graph of tapered cylinders arranged in 3D space. While SWC is well
+supported by specialized software packages for neuron modeling, it is not
+supported by more general programs for visualizing and manipulating graphs.
+
+swc2dot converts neuron morphologies stored in SWC to human-readable [DOT
+format](https://graphs.grevian.org/example) supported by
+[Graphviz](https://www.graphviz.org), [Gephi](https://gephi.org),
+[NetworkX](https://networkx.github.io), and others.
 
 ## Example
 
+swc2dot can be invoked from the command line as follows
 ```sh
-swc2dot -o morphology.dot morphology.swc
+swc2dot -o morphological_graph.dot morphology.swc
 ```
 
 Contents of `morphology.swc` input file:
@@ -28,7 +50,7 @@ Contents of `morphology.swc` input file:
 ...
 ```
 
-Contents of `morphology.dot` output file:
+Contents of `morphological_graph.dot` output file:
 ```dot
 graph{
     1 -- {2, 3, 4, 14, 28, 45, 76, 101};
