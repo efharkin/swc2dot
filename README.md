@@ -7,7 +7,7 @@ SWC format to DOT graph description language.
 
 ## Example
 
-```bash
+```sh
 swc2dot -o morphology.dot morphology.swc
 ```
 
@@ -29,7 +29,7 @@ Contents of `morphology.swc` input file:
 ```
 
 Contents of `morphology.dot` output file:
-```
+```dot
 graph{
     1 -- {2, 3, 4, 14, 28, 45, 76, 101};
     4 -- 5;
@@ -45,3 +45,26 @@ graph{
     ...
 }
 ```
+
+## Installation
+
+### Build from source
+
+Unfortunately, for now the only way to install swc2dot is to build it from
+source. Fortunately, this is very easy.
+
+You'll need a working Rust compiler together with the build manager Cargo to
+build swc2dot. The easiest way to get set up is with
+[rustup](https://rustup.rs). Try running `cargo  --version` in a
+terminal afterwards to make sure everything worked.
+
+Next, get a copy of the swc2dot git repository and open it in a terminal. On
+MacOS or Linux, you can do this by pasting `git clone --depth 1
+https://github.com/efharkin/swc2dot.git && cd swc2dot` into your terminal.
+
+Finally, compile swc2dot into an executable by running `cargo build --release`
+(note that this will download a couple of swc2dot's dependencies over the
+internet). You can find the resulting binary in `./target/release/swc2dot`. Put
+it somewhere in your `PATH` and you're done! Try running `swc2dot --help` to
+make sure everything worked.
+
