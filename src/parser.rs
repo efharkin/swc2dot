@@ -1,6 +1,6 @@
 use std::io::{BufReader, BufRead};
 use std::fs::File;
-use std::collections::{BTreeMap, btree_map::Entry};
+use std::collections::{BTreeMap, btree_map::{Entry, Iter}};
 
 pub fn parse_file(file_name: String) -> SWCNeuron {
     let reader = get_file_reader(file_name);
@@ -116,6 +116,10 @@ impl SWCNeuron {
                 Ok(())
             }
         }
+    }
+
+    pub fn iter(&self) -> Iter<usize, SWCCompartment> {
+        self.compartments.iter()
     }
 }
 
