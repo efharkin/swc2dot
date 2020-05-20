@@ -16,3 +16,7 @@ apicaldendrite:
 undefined:
   shape: doubleoctagon
   fillcolor: red
+
+custom:
+  shape: tripleoctagon
+  fillcolor: red

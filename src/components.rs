@@ -1,8 +1,9 @@
 use std::convert::From;
 use std::collections::{BTreeMap, btree_map::Iter};
 
-use crate::swc_parser::{SWCNeuron, SWCCompartment};
+use crate::swc_parser::{SWCNeuron, SWCCompartment, SWCCompartmentKind};
 
+#[derive(Clone)]
 pub struct Vertex {
     data: SWCCompartment,
     children: Vec<usize>
@@ -19,6 +20,10 @@ impl Vertex {
 
     pub fn get_child_ids(&self) -> &Vec<usize> {
         &self.children
+    }
+
+    pub fn get_kind(&self) -> SWCCompartmentKind {
+        self.data.kind
     }
 
     fn add_child(&mut self, child: &Vertex) {
@@ -40,8 +45,16 @@ pub struct Graph {
 }
 
 impl Graph {
-    pub fn iter(&self) -> Iter<usize, Vertex> {
+    pub fn iter_vertices(&self) -> Iter<usize, Vertex> {
         self.vertices.iter()
+    }
+
+    pub fn iter_short_trees(&self) -> ShortTreeIter {
+        let mut short_trees = Vec::with_capacity(self.vertices.len());
+        for (id, vertex) in self.iter_vertices() {
+            short_trees.push(ShortTree::from(vertex.clone()));
+        }
+        ShortTreeIter::new(short_trees)
     }
 
     pub fn len(&self) -> usize {
@@ -80,4 +93,62 @@ impl From<SWCNeuron> for Graph {
 
         return graph;
    }
+}
+
+/// A tree of height 1.
+///
+/// In DOT language, a tree of height 1 can be declared in one line.
+#[derive(Clone)]
+pub struct ShortTree {
+    root_id: usize,
+    child_ids: Vec<usize>
+}
+
+impl ShortTree {
+    pub fn get_root_id(&self) -> usize {
+        self.root_id
+    }
+
+    pub fn get_child_ids(&self) -> &Vec<usize> {
+        &self.child_ids
+    }
+}
+
+impl From<Vertex> for ShortTree {
+    fn from(vertex: Vertex) -> ShortTree {
+        ShortTree {
+            root_id: vertex.get_id(),
+            child_ids: vertex.get_child_ids().clone()
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct ShortTreeIter {
+    trees: Vec<ShortTree>,
+    ptr: usize
+}
+
+impl ShortTreeIter {
+    fn new(trees: Vec<ShortTree>) -> ShortTreeIter {
+        ShortTreeIter {
+            trees: trees,
+            ptr: 0
+        }
+    }
+}
+
+impl Iterator for ShortTreeIter {
+    type Item = ShortTree;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let item;
+        if self.ptr < self.trees.len() {
+            item = Some(self.trees[self.ptr].clone());
+        } else {
+            item = None;
+        }
+        self.ptr += 1;
+        return item;
+    }
 }

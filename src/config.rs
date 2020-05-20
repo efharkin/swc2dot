@@ -3,10 +3,11 @@ use std::fs::read_to_string;
 use linked_hash_map::{Entries, LinkedHashMap};
 use yaml_rust::{yaml::Yaml, YamlLoader};
 
-use crate::writer::ToDot;
+use crate::writer::{ToDot, indent};
+use crate::swc_parser::SWCCompartmentKind;
 
 static OPTION_GROUPS: &'static [&'static str] =
-    &["soma", "axon", "dendrite", "apicaldendrite", "undefined"];
+    &["soma", "axon", "dendrite", "apicaldendrite", "undefined", "custom"];
 
 pub struct Config {
     option_groups: LinkedHashMap<&'static str, ConfigOptionGroup>,
@@ -33,6 +34,18 @@ impl Config {
     pub fn try_overload_from_file(&mut self, filename: &str) -> Result<(), YamlParseError> {
         let mut yaml = Config::try_parse_yaml_file(filename)?;
         self.try_overload_from_yaml(yaml)
+    }
+
+    pub fn get_config(&self, group: SWCCompartmentKind) -> &ConfigOptionGroup {
+        match group {
+            SWCCompartmentKind::Soma => &self.option_groups["soma"],
+            SWCCompartmentKind::Axon => &self.option_groups["axon"],
+            SWCCompartmentKind::Dendrite => &self.option_groups["dendrite"],
+            SWCCompartmentKind::ApicalDendrite => &self.option_groups["apicaldendrite"],
+            SWCCompartmentKind::Undefined => &self.option_groups["undefined"],
+            SWCCompartmentKind::Custom => &self.option_groups["custom"],
+        }
+
     }
 
     /// Load the contents of a file as a Yaml object.
@@ -143,7 +156,7 @@ mod config_tests {
     }
 }
 
-struct ConfigOptionGroup {
+pub struct ConfigOptionGroup {
     options: LinkedHashMap<String, Option<String>>,
 }
 
@@ -163,9 +176,9 @@ impl ConfigOptionGroup {
 }
 
 impl ToDot for ConfigOptionGroup {
-    fn to_dot(&self) -> String {
+    fn to_dot(&self, indent_level: u8, config: &Config) -> String {
         let mut config_string = String::with_capacity(256);
-        config_string.push_str("node [");
+        config_string.push_str(&format!("\n{}node [", indent(indent_level)));
 
         let mut options_iterator = self.options.iter();
         // First option
@@ -191,7 +204,7 @@ impl ToDot for ConfigOptionGroup {
                 None => {}
             }
         }
-        config_string.push_str("]");
+        config_string.push_str("];");
 
         config_string.shrink_to_fit();
         return config_string;
