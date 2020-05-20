@@ -5,6 +5,7 @@ mod cli_parser;
 mod swc_parser;
 mod components;
 mod writer;
+mod config;
 
 use cli_parser::get_cli_arguments;
 use swc_parser::parse_file;
