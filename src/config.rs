@@ -1,4 +1,3 @@
-use std::convert::TryFrom;
 use std::fs::read_to_string;
 
 use linked_hash_map::{Entries, LinkedHashMap};
@@ -118,59 +117,6 @@ impl ConfigOptionGroup {
         for entry in overrides.options.entries() {
             self.options
                 .insert(entry.key().clone(), entry.get().clone());
-        }
-    }
-}
-
-impl TryFrom<Yaml> for ConfigOptionGroup {
-    type Error = YamlParseError;
-
-    /// Convert a `Yaml` object into a `ConfigOptionGroup`.
-    ///
-    /// Only implemented for the `Yaml::Hash` variant (see `yaml_rust::yaml::Yaml`).
-    fn try_from(yaml: Yaml) -> Result<ConfigOptionGroup, Self::Error> {
-        let error_prefix = "ConfigOptionGroup can only be constructed from Yaml Hash, not";
-        match yaml {
-            Yaml::Hash(mut hash) => {
-                // Even though Hash is declared as mut, it will not be modified.
-                // It's declared as mut because hash.entries() takes &mut self.
-                return parse_config_entries(&mut hash.entries());
-            }
-            Yaml::Real(val) => {
-                return Err(YamlParseError::WrongType(format!(
-                    "{} Real {}",
-                    error_prefix, val
-                )))
-            }
-            Yaml::Integer(val) => {
-                return Err(YamlParseError::WrongType(format!(
-                    "{} Integer {}",
-                    error_prefix, val
-                )))
-            }
-            Yaml::String(val) => {
-                return Err(YamlParseError::WrongType(format!(
-                    "{} String {}",
-                    error_prefix, val
-                )))
-            }
-            Yaml::Boolean(val) => {
-                return Err(YamlParseError::WrongType(format!(
-                    "{} Boolean {}",
-                    error_prefix, val
-                )))
-            }
-            Yaml::Array(val) => {
-                return Err(YamlParseError::WrongType(format!("{} Array", error_prefix)))
-            }
-            Yaml::Alias(val) => {
-                return Err(YamlParseError::WrongType(format!(
-                    "{} Alias {}",
-                    error_prefix, val
-                )))
-            }
-            Yaml::Null => return Err(YamlParseError::WrongType(format!("{} Null", error_prefix))),
-            Yaml::BadValue => return Err(YamlParseError::BadValue),
         }
     }
 }
