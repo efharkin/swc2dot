@@ -1,9 +1,18 @@
 soma:
+  shape: diamond
+  fillcolor: green
 
 axon:
+  shape: invtriangle
 
 dendrite:
+  shape: ellipse
+  fillcolor: blue
 
 apicaldendrite:
+  shape: ellipse
+  fillcolor: blue
 
 undefined:
+  shape: doubleoctagon
+  fillcolor: red

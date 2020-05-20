@@ -18,13 +18,29 @@ impl Config {
         for group in OPTION_GROUPS {
             config.option_groups.insert(group, ConfigOptionGroup::new());
         }
-        config.overload_from_file("default_config.yml")?;
+
+        let default_config_bytes = include_bytes!("default_config.yml");
+        let default_config_yaml = Config::try_parse_yaml(
+            std::str::from_utf8(default_config_bytes)
+                .expect("Could not parse default config as str."),
+        )?;
+        config.try_overload_from_yaml(default_config_yaml)?;
         return Ok(config);
     }
 
-    pub fn overload_from_file(&mut self, filename: &str) -> Result<(), YamlParseError> {
-        let mut yaml = Config::parse_yaml(filename)?;
+    pub fn try_overload_from_file(&mut self, filename: &str) -> Result<(), YamlParseError> {
+        let mut yaml = Config::try_parse_yaml_file(filename)?;
+        self.try_overload_from_yaml(yaml)
+    }
 
+    /// Load the contents of a file as a Yaml object.
+    fn try_parse_yaml_file(filename: &str) -> Result<Yaml, YamlParseError> {
+        let yaml_string = Config::try_read_file(filename)?;
+        let yaml_object = Config::try_parse_yaml(&yaml_string)?;
+        return Ok(yaml_object);
+    }
+
+    fn try_overload_from_yaml(&mut self, yaml: Yaml) -> Result<(), YamlParseError> {
         // Check whether YAML config file contains a hash (which it should)
         match yaml {
             Yaml::Hash(mut top_level_hash) => {
@@ -49,8 +65,8 @@ impl Config {
                                 // If it is not a hash, return an Err.
                                 _ => {
                                     return Err(YamlParseError::WrongType(format!(
-                                        "Expected config group {} in file {} to be a hash.",
-                                        group, filename
+                                        "Expected config group {} to be a hash.",
+                                        group
                                     )))
                                 }
                             }
@@ -61,19 +77,31 @@ impl Config {
                 }
             }
             _ => {
-                return Err(YamlParseError::WrongType(format!(
-                    "Expected contents of file {} to be a Hash.",
-                    filename
-                )))
+                return Err(YamlParseError::WrongType(
+                    "Expected contents of config YAML to be a Hash.".to_string(),
+                ))
             }
         }
 
         return Ok(());
     }
 
-    /// Load the contents of a file as a Yaml object.
-    fn parse_yaml(filename: &str) -> Result<Yaml, YamlParseError> {
-        // Try to read file.
+    fn try_parse_yaml(yaml_string: &str) -> Result<Yaml, YamlParseError> {
+        let config;
+        match YamlLoader::load_from_str(&yaml_string) {
+            Ok(yaml) => config = yaml,
+            Err(_) => {
+                return Err(YamlParseError::FileRead(
+                    "Could not parse contents of configuration file as YAML".to_string(),
+                ))
+            }
+        }
+        debug_assert!(config.len() == 1);
+
+        return Ok(config[0].clone());
+    }
+
+    fn try_read_file(filename: &str) -> Result<String, YamlParseError> {
         let yaml_string;
         match read_to_string(filename) {
             Ok(string) => yaml_string = string,
@@ -84,21 +112,32 @@ impl Config {
                 )))
             }
         }
+        return Ok(yaml_string);
+    }
+}
 
-        // Try to parse as YAML.
-        let config;
-        match YamlLoader::load_from_str(&yaml_string) {
-            Ok(yaml) => config = yaml,
-            Err(_) => {
-                return Err(YamlParseError::FileRead(format!(
-                    "Could not parse contents of configuration file {} as YAML",
-                    filename
-                )))
-            }
+#[cfg(test)]
+mod config_tests {
+    use super::*;
+
+    #[test]
+    fn construct_config() {
+        match Config::new() {
+            Ok(_) => {}
+            Err(parse_error) => match parse_error {
+                YamlParseError::WrongType(msg) => panic!(format!(
+                    "Could not construct Config due to `YamlParseError::Wrongtype`: {}",
+                    msg
+                )),
+                YamlParseError::FileRead(msg) => panic!(format!(
+                    "Could not construct Config due to `YamlParseError::FileRead`: {}",
+                    msg
+                )),
+                YamlParseError::BadValue => {
+                    panic!("Could not construct Config due to `YamlParseError::BadValue`")
+                }
+            },
         }
-        debug_assert!(config.len() == 1);
-
-        return Ok(config[0].clone());
     }
 }
 
