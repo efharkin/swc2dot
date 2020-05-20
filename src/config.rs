@@ -3,6 +3,8 @@ use std::fs::read_to_string;
 use linked_hash_map::{Entries, LinkedHashMap};
 use yaml_rust::{yaml::Yaml, YamlLoader};
 
+use crate::writer::ToDot;
+
 static OPTION_GROUPS: &'static [&'static str] =
     &["soma", "axon", "dendrite", "apicaldendrite", "undefined"];
 
@@ -157,6 +159,42 @@ impl ConfigOptionGroup {
             self.options
                 .insert(entry.key().clone(), entry.get().clone());
         }
+    }
+}
+
+impl ToDot for ConfigOptionGroup {
+    fn to_dot(&self) -> String {
+        let mut config_string = String::with_capacity(256);
+        config_string.push_str("node [");
+
+        let mut options_iterator = self.options.iter();
+        // First option
+        let (key, val) = options_iterator.next().unwrap();
+        config_string.push_str(&key);
+        match val {
+            Some(val) => {
+                config_string.push_str("=");
+                config_string.push_str(&val);
+            },
+            None => {}
+        }
+
+        // All subsequent options
+        for (key, val) in options_iterator {
+            config_string.push_str(",");
+            config_string.push_str(&key);
+            match val {
+                Some(val) => {
+                    config_string.push_str("=");
+                    config_string.push_str(&val);
+                },
+                None => {}
+            }
+        }
+        config_string.push_str("]");
+
+        config_string.shrink_to_fit();
+        return config_string;
     }
 }
 
