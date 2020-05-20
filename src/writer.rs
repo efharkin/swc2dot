@@ -39,18 +39,12 @@ impl ToDot for Graph {
 
         // Node configuration
         let mut buffers = VertexConfigBuffers::new(256);
-        buffers.axon.push_str(&config.get_config(SWCCompartmentKind::Axon).to_dot(indent_level + 2, config));
-        buffers.axon.push_str(&format!("\n{}", indent(indent_level + 2)));
-        buffers.soma.push_str(&config.get_config(SWCCompartmentKind::Soma).to_dot(indent_level + 2, config));
-        buffers.soma.push_str(&format!("\n{}", indent(indent_level + 2)));
-        buffers.dendrite.push_str(&config.get_config(SWCCompartmentKind::Dendrite).to_dot(indent_level + 2, config));
-        buffers.dendrite.push_str(&format!("\n{}", indent(indent_level + 2)));
-        buffers.apicaldendrite.push_str(&config.get_config(SWCCompartmentKind::ApicalDendrite).to_dot(indent_level + 2, config));
-        buffers.apicaldendrite.push_str(&format!("\n{}", indent(indent_level + 2)));
-        buffers.undefined.push_str(&config.get_config(SWCCompartmentKind::Undefined).to_dot(indent_level + 2, config));
-        buffers.undefined.push_str(&format!("\n{}", indent(indent_level + 2)));
-        buffers.custom.push_str(&config.get_config(SWCCompartmentKind::Custom).to_dot(indent_level + 2, config));
-        buffers.custom.push_str(&format!("\n{}", indent(indent_level + 2)));
+        buffers.axon.push_str(&format!("{}{}", indent(indent_level + 2), config.get_config(SWCCompartmentKind::Axon).to_dot(indent_level + 2, config)));
+        buffers.soma.push_str(&format!("{}{}", indent(indent_level + 2), config.get_config(SWCCompartmentKind::Soma).to_dot(indent_level + 2, config)));
+        buffers.dendrite.push_str(&format!("{}{}", indent(indent_level + 2), config.get_config(SWCCompartmentKind::Dendrite).to_dot(indent_level + 2, config)));
+        buffers.apicaldendrite.push_str(&format!("{}{}", indent(indent_level + 2), config.get_config(SWCCompartmentKind::ApicalDendrite).to_dot(indent_level + 2, config)));
+        buffers.undefined.push_str(&format!("{}{}", indent(indent_level + 2), config.get_config(SWCCompartmentKind::Undefined).to_dot(indent_level + 2, config)));
+        buffers.custom.push_str(&format!("{}{}", indent(indent_level + 2), config.get_config(SWCCompartmentKind::Custom).to_dot(indent_level + 2, config)));
         for (_, vertex) in self.iter_vertices() {
             match vertex.get_kind() {
                 SWCCompartmentKind::Axon => buffers.axon.push_str(&vertex.to_dot(indent_level + 2, config)),
@@ -62,7 +56,7 @@ impl ToDot for Graph {
             }
         }
 
-        graph_string.push_str(&format!("\n{{{}\n{}}}\n{{{}\n{}}}", buffers.axon, indent(1), buffers.soma, indent(1)));
+        graph_string.push_str(&format!("\n{}{{{}\n{}}}\n{}{{{}\n{}}}\n{}{{{}\n{}}}", indent(1), buffers.axon, indent(1), indent(1), buffers.soma, indent(1), indent(1), buffers.dendrite, indent(1)));
 
         // Write edges
         for short_tree in self.iter_short_trees() {
