@@ -324,6 +324,7 @@ mod parse_config_entries_tests {
     }
 
     #[test]
+    #[allow(non_snake_case)]
     fn parse_bool_True_as_string() {
         let mut yaml = load_hash_from_str("key: True");
         let parsed;
@@ -344,6 +345,7 @@ mod parse_config_entries_tests {
     }
 
     #[test]
+    #[allow(non_snake_case)]
     fn parse_bool_TRUE_as_string() {
         let mut yaml = load_hash_from_str("key: TRUE");
         let parsed;
@@ -364,6 +366,7 @@ mod parse_config_entries_tests {
     }
 
     #[test]
+    #[allow(non_snake_case)]
     fn parse_empty_value_as_None() {
         let mut yaml = load_hash_from_str("key:");
         let parsed;
