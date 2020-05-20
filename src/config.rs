@@ -1,21 +1,20 @@
-use std::fs::read_to_string;
 use std::convert::TryFrom;
+use std::fs::read_to_string;
 
-use yaml_rust::{YamlLoader, yaml::Yaml};
-use linked_hash_map::{LinkedHashMap, Entries};
+use linked_hash_map::{Entries, LinkedHashMap};
+use yaml_rust::{yaml::Yaml, YamlLoader};
 
-
-static OPTION_GROUPS: &'static [&'static str] = &["soma", "axon", "dendrite", "apicaldendrite", "undefined"];
+static OPTION_GROUPS: &'static [&'static str] =
+    &["soma", "axon", "dendrite", "apicaldendrite", "undefined"];
 
 pub struct Config {
-    option_groups: LinkedHashMap<&'static str, ConfigOptionGroup>
+    option_groups: LinkedHashMap<&'static str, ConfigOptionGroup>,
 }
 
 impl Config {
-
     pub fn new() -> Result<Config, YamlParseError> {
         let mut config = Config {
-            option_groups: LinkedHashMap::new()
+            option_groups: LinkedHashMap::new(),
         };
         for group in OPTION_GROUPS {
             config.option_groups.insert(group, ConfigOptionGroup::new());
@@ -30,31 +29,44 @@ impl Config {
         // Check whether YAML config file contains a hash (which it should)
         match yaml {
             Yaml::Hash(mut top_level_hash) => {
-
                 // Iterate over top level options that might be in the config file.
                 for group in OPTION_GROUPS {
-
                     // Check whether each config option is there.
                     match top_level_hash.get_mut(&Yaml::from_str(*group)) {
                         Some(mut yaml) => {
-
                             // Check whether config option is a Hash, if it exists.
                             match yaml {
                                 // If it is a hash, parse it.
                                 Yaml::Hash(hash) => {
                                     let option_group = parse_config_entries(&mut hash.entries())?;
-                                    self.option_groups.get_mut(*group).expect(&format!("Could not get group {} even though it exists", group)).override_options(option_group);
-                                },
+                                    self.option_groups
+                                        .get_mut(*group)
+                                        .expect(&format!(
+                                            "Could not get group {} even though it exists",
+                                            group
+                                        ))
+                                        .override_options(option_group);
+                                }
                                 // If it is not a hash, return an Err.
-                                _ => return Err(YamlParseError::WrongType(format!("Expected config group {} in file {} to be a hash.", group, filename)))
+                                _ => {
+                                    return Err(YamlParseError::WrongType(format!(
+                                        "Expected config group {} in file {} to be a hash.",
+                                        group, filename
+                                    )))
+                                }
                             }
-                        },
+                        }
                         // It is OK for a config group to be left out of a file.
-                        None => continue
+                        None => continue,
                     }
                 }
-            },
-            _ => return Err(YamlParseError::WrongType(format!("Expected contents of file {} to be a Hash.", filename)))
+            }
+            _ => {
+                return Err(YamlParseError::WrongType(format!(
+                    "Expected contents of file {} to be a Hash.",
+                    filename
+                )))
+            }
         }
 
         return Ok(());
@@ -66,14 +78,24 @@ impl Config {
         let yaml_string;
         match read_to_string(filename) {
             Ok(string) => yaml_string = string,
-            Err(msg) => return Err(YamlParseError::FileRead(format!("Could not open configuration file {}: {}", filename, msg)))
+            Err(msg) => {
+                return Err(YamlParseError::FileRead(format!(
+                    "Could not open configuration file {}: {}",
+                    filename, msg
+                )))
+            }
         }
 
         // Try to parse as YAML.
         let config;
         match YamlLoader::load_from_str(&yaml_string) {
             Ok(yaml) => config = yaml,
-            Err(_) => return Err(YamlParseError::FileRead(format!("Could not parse contents of configuration file {} as YAML", filename)))
+            Err(_) => {
+                return Err(YamlParseError::FileRead(format!(
+                    "Could not parse contents of configuration file {} as YAML",
+                    filename
+                )))
+            }
         }
         debug_assert!(config.len() == 1);
 
@@ -81,20 +103,21 @@ impl Config {
     }
 }
 
-struct ConfigOptionGroup{
-    options: LinkedHashMap<String, Option<String>>
+struct ConfigOptionGroup {
+    options: LinkedHashMap<String, Option<String>>,
 }
 
 impl ConfigOptionGroup {
     fn new() -> ConfigOptionGroup {
         ConfigOptionGroup {
-            options: LinkedHashMap::<String, Option<String>>::new()
+            options: LinkedHashMap::<String, Option<String>>::new(),
         }
     }
 
     fn override_options(&mut self, mut overrides: ConfigOptionGroup) {
         for entry in overrides.options.entries() {
-            self.options.insert(entry.key().clone(), entry.get().clone());
+            self.options
+                .insert(entry.key().clone(), entry.get().clone());
         }
     }
 }
@@ -138,10 +161,7 @@ impl TryFrom<Yaml> for ConfigOptionGroup {
                 )))
             }
             Yaml::Array(val) => {
-                return Err(YamlParseError::WrongType(format!(
-                    "{} Array",
-                    error_prefix
-                )))
+                return Err(YamlParseError::WrongType(format!("{} Array", error_prefix)))
             }
             Yaml::Alias(val) => {
                 return Err(YamlParseError::WrongType(format!(
@@ -149,13 +169,8 @@ impl TryFrom<Yaml> for ConfigOptionGroup {
                     error_prefix, val
                 )))
             }
-            Yaml::Null => {
-                return Err(YamlParseError::WrongType(format!(
-                    "{} Null",
-                    error_prefix
-                )))
-            }
-            Yaml::BadValue => return Err(YamlParseError::BadValue)
+            Yaml::Null => return Err(YamlParseError::WrongType(format!("{} Null", error_prefix))),
+            Yaml::BadValue => return Err(YamlParseError::BadValue),
         }
     }
 }
@@ -164,10 +179,16 @@ impl TryFrom<Yaml> for ConfigOptionGroup {
 ///
 /// `Yaml::Null` variants result in a value of `Option::None`, and all other
 /// valid `Yaml` variants are coerced to `Option::Some(String)`.
-fn parse_config_entries(entries: &mut Entries<Yaml, Yaml>) -> Result<ConfigOptionGroup, YamlParseError> {
+fn parse_config_entries(
+    entries: &mut Entries<Yaml, Yaml>,
+) -> Result<ConfigOptionGroup, YamlParseError> {
     let mut group = ConfigOptionGroup::new();
     for entry in entries {
-        let key: String = entry.key().as_str().expect("Could not get Yaml key as String.").to_string();
+        let key: String = entry
+            .key()
+            .as_str()
+            .expect("Could not get Yaml key as String.")
+            .to_string();
         let val: Option<String>;
         match entry.get() {
             Yaml::Null => val = None,
@@ -175,7 +196,12 @@ fn parse_config_entries(entries: &mut Entries<Yaml, Yaml>) -> Result<ConfigOptio
             Yaml::Real(num) => val = Some(num.as_str().to_string()),
             Yaml::Integer(num) => val = Some(num.to_string()),
             Yaml::Boolean(bool_value) => val = Some(bool_value.to_string()),
-            _ => return Err(YamlParseError::WrongType(format!("Expected value of YAML {} to be Null or String-like.", entry.key().as_str().unwrap())))
+            _ => {
+                return Err(YamlParseError::WrongType(format!(
+                    "Expected value of YAML {} to be Null or String-like.",
+                    entry.key().as_str().unwrap()
+                )))
+            }
         }
         group.options.insert(key, val);
     }
@@ -188,7 +214,7 @@ pub enum YamlParseError {
     /// Yaml object does not exist (see `yaml_rust::yaml::Yaml::BadValue`).
     BadValue,
     /// Could not read Yaml from a file.
-    FileRead(String)
+    FileRead(String),
 }
 
 #[cfg(test)]
@@ -196,7 +222,9 @@ mod parse_config_entries_tests {
     use super::*;
 
     fn load_hash_from_str(string: &str) -> LinkedHashMap<Yaml, Yaml> {
-        let doc = YamlLoader::load_from_str(string).expect(&format!("Could not load {} as a yaml string", string))[0].clone();
+        let doc = YamlLoader::load_from_str(string)
+            .expect(&format!("Could not load {} as a yaml string", string))[0]
+            .clone();
         doc.into_hash().expect("Could not create yaml hash")
     }
 
@@ -206,11 +234,18 @@ mod parse_config_entries_tests {
         let parsed;
         match parse_config_entries(&mut yaml.entries()) {
             Ok(result) => parsed = result,
-            Err(_) => panic!("Could not parse hash entry as String key and Option<String> value")
+            Err(_) => panic!("Could not parse hash entry as String key and Option<String> value"),
         }
 
-        assert!(parsed.options.contains_key("key"), "Resulting HashMap does not contain expected key 'key'");
-        assert_eq!(parsed.options["key"], Some("value".to_string()), "Expected value associated with key 'key' to be 'value'");
+        assert!(
+            parsed.options.contains_key("key"),
+            "Resulting HashMap does not contain expected key 'key'"
+        );
+        assert_eq!(
+            parsed.options["key"],
+            Some("value".to_string()),
+            "Expected value associated with key 'key' to be 'value'"
+        );
     }
 
     #[test]
@@ -220,13 +255,27 @@ mod parse_config_entries_tests {
         let parsed;
         match parse_config_entries(&mut yaml.entries()) {
             Ok(result) => parsed = result,
-            Err(_) => panic!("Could not parse hash entry as String key and Option<String> value")
+            Err(_) => panic!("Could not parse hash entry as String key and Option<String> value"),
         }
 
-        assert!(parsed.options.contains_key("key1"), "Resulting HashMap does not contain expected key 'key1'");
-        assert!(parsed.options.contains_key("key2"), "Resulting HashMap does not contain expected key 'key2'");
-        assert_eq!(parsed.options["key1"], Some("value1".to_string()), "Expected value associated with key 'key1' to be 'value1'");
-        assert_eq!(parsed.options["key2"], Some("value2".to_string()), "Expected value associated with key 'key2' to be 'value2'");
+        assert!(
+            parsed.options.contains_key("key1"),
+            "Resulting HashMap does not contain expected key 'key1'"
+        );
+        assert!(
+            parsed.options.contains_key("key2"),
+            "Resulting HashMap does not contain expected key 'key2'"
+        );
+        assert_eq!(
+            parsed.options["key1"],
+            Some("value1".to_string()),
+            "Expected value associated with key 'key1' to be 'value1'"
+        );
+        assert_eq!(
+            parsed.options["key2"],
+            Some("value2".to_string()),
+            "Expected value associated with key 'key2' to be 'value2'"
+        );
     }
 
     #[test]
@@ -235,11 +284,18 @@ mod parse_config_entries_tests {
         let parsed;
         match parse_config_entries(&mut yaml.entries()) {
             Ok(result) => parsed = result,
-            Err(_) => panic!("Could not parse hash entry as String key and Option<String> value")
+            Err(_) => panic!("Could not parse hash entry as String key and Option<String> value"),
         }
 
-        assert!(parsed.options.contains_key("key"), "Resulting HashMap does not contain expected key 'key'");
-        assert_eq!(parsed.options["key"], Some("1.23".to_string()), "Expected value associated with key 'key' to be '1.23'");
+        assert!(
+            parsed.options.contains_key("key"),
+            "Resulting HashMap does not contain expected key 'key'"
+        );
+        assert_eq!(
+            parsed.options["key"],
+            Some("1.23".to_string()),
+            "Expected value associated with key 'key' to be '1.23'"
+        );
     }
 
     #[test]
@@ -248,11 +304,18 @@ mod parse_config_entries_tests {
         let parsed;
         match parse_config_entries(&mut yaml.entries()) {
             Ok(result) => parsed = result,
-            Err(_) => panic!("Could not parse hash entry as String key and Option<String> value")
+            Err(_) => panic!("Could not parse hash entry as String key and Option<String> value"),
         }
 
-        assert!(parsed.options.contains_key("key"), "Resulting HashMap does not contain expected key 'key'");
-        assert_eq!(parsed.options["key"], Some("23".to_string()), "Expected value associated with key 'key' to be '23'");
+        assert!(
+            parsed.options.contains_key("key"),
+            "Resulting HashMap does not contain expected key 'key'"
+        );
+        assert_eq!(
+            parsed.options["key"],
+            Some("23".to_string()),
+            "Expected value associated with key 'key' to be '23'"
+        );
     }
 
     #[test]
@@ -261,12 +324,18 @@ mod parse_config_entries_tests {
         let parsed;
         match parse_config_entries(&mut yaml.entries()) {
             Ok(result) => parsed = result,
-            Err(_) => panic!("Could not parse hash entry as String key and Option<String> value")
+            Err(_) => panic!("Could not parse hash entry as String key and Option<String> value"),
         }
 
-        assert!(parsed.options.contains_key("key"), "Resulting HashMap does not contain expected key 'key'");
-        assert_eq!(parsed.options["key"], Some("true".to_string()), "Expected value associated with key 'key' to be 'true'");
-
+        assert!(
+            parsed.options.contains_key("key"),
+            "Resulting HashMap does not contain expected key 'key'"
+        );
+        assert_eq!(
+            parsed.options["key"],
+            Some("true".to_string()),
+            "Expected value associated with key 'key' to be 'true'"
+        );
     }
 
     #[test]
@@ -275,12 +344,18 @@ mod parse_config_entries_tests {
         let parsed;
         match parse_config_entries(&mut yaml.entries()) {
             Ok(result) => parsed = result,
-            Err(_) => panic!("Could not parse hash entry as String key and Option<String> value")
+            Err(_) => panic!("Could not parse hash entry as String key and Option<String> value"),
         }
 
-        assert!(parsed.options.contains_key("key"), "Resulting HashMap does not contain expected key 'key'");
-        assert_eq!(parsed.options["key"], Some("True".to_string()), "Expected value associated with key 'key' to be 'True'");
-
+        assert!(
+            parsed.options.contains_key("key"),
+            "Resulting HashMap does not contain expected key 'key'"
+        );
+        assert_eq!(
+            parsed.options["key"],
+            Some("True".to_string()),
+            "Expected value associated with key 'key' to be 'True'"
+        );
     }
 
     #[test]
@@ -289,11 +364,18 @@ mod parse_config_entries_tests {
         let parsed;
         match parse_config_entries(&mut yaml.entries()) {
             Ok(result) => parsed = result,
-            Err(_) => panic!("Could not parse hash entry as String key and Option<String> value")
+            Err(_) => panic!("Could not parse hash entry as String key and Option<String> value"),
         }
 
-        assert!(parsed.options.contains_key("key"), "Resulting HashMap does not contain expected key 'key'");
-        assert_eq!(parsed.options["key"], Some("TRUE".to_string()), "Expected value associated with key 'key' to be 'TRUE'");
+        assert!(
+            parsed.options.contains_key("key"),
+            "Resulting HashMap does not contain expected key 'key'"
+        );
+        assert_eq!(
+            parsed.options["key"],
+            Some("TRUE".to_string()),
+            "Expected value associated with key 'key' to be 'TRUE'"
+        );
     }
 
     #[test]
@@ -302,10 +384,16 @@ mod parse_config_entries_tests {
         let parsed;
         match parse_config_entries(&mut yaml.entries()) {
             Ok(result) => parsed = result,
-            Err(_) => panic!("Could not parse hash entry as String key and Option<String> value")
+            Err(_) => panic!("Could not parse hash entry as String key and Option<String> value"),
         }
 
-        assert!(parsed.options.contains_key("key"), "Resulting HashMap does not contain expected key 'key'");
-        assert_eq!(parsed.options["key"], None, "Expected value associated with key 'key' to be None");
+        assert!(
+            parsed.options.contains_key("key"),
+            "Resulting HashMap does not contain expected key 'key'"
+        );
+        assert_eq!(
+            parsed.options["key"], None,
+            "Expected value associated with key 'key' to be None"
+        );
     }
 }
