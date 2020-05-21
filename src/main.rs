@@ -10,7 +10,7 @@ mod config;
 use cli_parser::get_cli_arguments;
 use swc_parser::parse_file;
 use components::Graph;
-use writer::ToDot;
+use writer::ConfiguredToDot;
 use config::Config;
 
 
@@ -26,6 +26,6 @@ fn main() {
     let graphneuron = Graph::from(swcneuron);
 
     let mut f = File::create(cli_matches.value_of("output").expect("Could not get output.")).expect("Could not create output file.");
-    f.write(&graphneuron.to_dot(0, &config).into_bytes());
+    f.write(&graphneuron.to_dot(false, 0, &config).into_bytes());
     f.flush();
 }

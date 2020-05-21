@@ -176,9 +176,15 @@ impl ConfigOptionGroup {
 }
 
 impl ToDot for ConfigOptionGroup {
-    fn to_dot(&self, indent_level: u8, config: &Config) -> String {
+    fn to_dot(&self, leading_newline: bool, indent_level: u8) -> String {
         let mut config_string = String::with_capacity(256);
-        config_string.push_str(&format!("\n{}node [", indent(indent_level)));
+
+        // Prefix
+        if leading_newline {
+            config_string.push_str("\n");
+        }
+        config_string.push_str(&indent(indent_level));
+        config_string.push_str("node [");
 
         let mut options_iterator = self.options.iter();
         // First option
@@ -204,6 +210,8 @@ impl ToDot for ConfigOptionGroup {
                 None => {}
             }
         }
+
+        // Close delimiter.
         config_string.push_str("];");
 
         config_string.shrink_to_fit();
