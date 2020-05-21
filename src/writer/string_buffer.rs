@@ -1,4 +1,4 @@
-use super::{INDENT_SIZE, indent};
+use super::{indent, INDENT_SIZE};
 
 /// A `String` buffer that will appear to be empty if it has never been modified.
 #[derive(Clone, Debug)]
@@ -12,8 +12,9 @@ pub struct StringBuffer {
 }
 
 impl StringBuffer {
+    /// Create a new `StringBuffer`.
     pub fn new(leading_newline: bool, indent_level: u8, capacity: usize) -> StringBuffer {
-        let mut buf = String::with_capacity((1 + INDENT_SIZE*indent_level) as usize + capacity);
+        let mut buf = String::with_capacity((1 + INDENT_SIZE * indent_level) as usize + capacity);
 
         if leading_newline {
             buf.push_str("\n");
@@ -26,12 +27,79 @@ impl StringBuffer {
             has_been_written_to: false,
             indent_level: indent_level,
             line_width: 80,
-            cursor_position: 0
+            cursor_position: 0,
         };
         string_buffer.cursor_position = string_buffer.newline_cursor_position();
         string_buffer.assert_cursor_is_within_line();
 
         return string_buffer;
+    }
+
+    /// Push `string` onto the end of `StringBuffer`.
+    ///
+    /// Note: this will mark the `StringBuffer` as modified.
+    pub fn push_str(&mut self, string: &str) {
+        self.has_been_written_to = true;
+        self.weak_push_str(string);
+    }
+
+    /// Insert a newline into the `StringBuffer`.
+    ///
+    /// Does not mark the buffer as modified.
+    pub fn newline(&mut self) {
+        self.buf.push_str("\n");
+        self.buf.push_str(&indent(self.indent_level));
+        self.cursor_position = self.newline_cursor_position();
+        self.assert_cursor_is_within_line();
+    }
+
+    /// Push `&str` onto the end of `StringBuffer`, but don't flag the buffer as modified.
+    pub fn weak_push_str(&mut self, string: &str) {
+        self.assert_cursor_is_within_line();
+
+        // Start on a new line if we will run out of room on the current one,
+        // unless we're already at the start of a line.
+        if (string.len() > self.remaining_space_on_line() as usize)
+            & (self.cursor_position > self.newline_cursor_position())
+        {
+            self.newline();
+        }
+
+        // Add the string to the buffer
+        self.buf.push_str(string);
+
+        // Update cursor position
+        if string.len() as u32 + self.cursor_position <= self.line_width {
+            self.cursor_position += string.len() as u32;
+        } else {
+            // If the cursor went off the end of the line, go to a new line.
+            self.newline();
+            assert_eq!(self.cursor_position, self.newline_cursor_position());
+        }
+
+        self.assert_cursor_is_within_line();
+    }
+
+    /// Get contents of `StringBuffer`.
+    ///
+    /// Returns an empty `String` if the buffer has not been marked as modified.
+    pub fn to_string(&self) -> String {
+        if self.has_been_written_to {
+            let mut result = self.buf.clone();
+            result.shrink_to_fit();
+            result
+        } else {
+            self.empty_buf.clone()
+        }
+    }
+
+    /// Get the length of the `StringBuffer`.
+    pub fn len(&self) -> usize {
+        if self.has_been_written_to {
+            self.buf.len()
+        } else {
+            self.empty_buf.len()
+        }
     }
 
     /// Get the position of the cursor at the beginning of a blank line.
@@ -40,19 +108,7 @@ impl StringBuffer {
         (self.indent_level * INDENT_SIZE) as u32
     }
 
-    /// Push `&str` onto the end of `StringBuffer`.
-    pub fn push_str(&mut self, string: &str) {
-        self.has_been_written_to = true;
-        self.weak_push_str(string);
-    }
-
-    fn newline(&mut self) {
-        self.buf.push_str("\n");
-        self.buf.push_str(&indent(self.indent_level));
-        self.cursor_position = self.newline_cursor_position();
-        self.assert_cursor_is_within_line();
-    }
-
+    /// Get the remaining amount of space on the current line.
     #[inline]
     fn remaining_space_on_line(&self) -> u32 {
         self.assert_cursor_is_within_line();
@@ -74,53 +130,6 @@ impl StringBuffer {
             self.cursor_position,
             self.line_width
         );
-    }
-
-    /// Push `&str` onto the end of `StringBuffer`, but don't flag the buffer as modified.
-    pub fn weak_push_str(&mut self, string: &str) {
-        self.assert_cursor_is_within_line();
-
-        // Start on a new line if we will run out of room on the current one,
-        // unless we're already at the start of a line.
-        if (string.len() > self.remaining_space_on_line() as usize)
-            & (self.cursor_position > self.newline_cursor_position()) {
-            self.newline();
-        }
-
-        // Add the string to the buffer
-        self.buf.push_str(string);
-
-        // Update cursor position
-        if string.len() as u32 + self.cursor_position <= self.line_width {
-            self.cursor_position += string.len() as u32;
-        } else {
-            // If the cursor went off the end of the line, go to a new line.
-            self.newline();
-            assert_eq!(self.cursor_position, self.newline_cursor_position());
-        }
-
-        self.assert_cursor_is_within_line();
-    }
-
-    /// Get contents of `StringBuffer`.
-    ///
-    /// Returns an empty `String` if `push_str()` has never been called.
-    pub fn to_string(&self) -> String {
-        if self.has_been_written_to {
-            let mut result = self.buf.clone();
-            result.shrink_to_fit();
-            result
-        } else {
-            self.empty_buf.clone()
-        }
-    }
-
-    pub fn len(&self) -> usize {
-        if self.has_been_written_to {
-            self.buf.len()
-        } else {
-            self.empty_buf.len()
-        }
     }
 }
 
@@ -151,7 +160,7 @@ mod string_buffer_tests {
     #[test]
     fn returns_empty_if_push_str_is_never_called() {
         // Initialize a `StringBuffer` with a newline and big indent.
-        let mut string = StringBuffer::new(true, 5, 32);
+        let string = StringBuffer::new(true, 5, 32);
         assert_eq!("".to_string(), string.to_string())
     }
 
@@ -169,10 +178,6 @@ mod string_buffer_tests {
         assert_eq!("\nsomething".to_string(), string.to_string());
     }
 
-    fn compare_string_ref(a: &String, b: &String) -> bool {
-        a == b
-    }
-
     fn compare_str_ref(a: &str, b: &str) -> bool {
         a == b
     }
@@ -180,7 +185,7 @@ mod string_buffer_tests {
     #[test]
     fn asref_str_empty_if_push_str_is_never_called() {
         // Initialize a `StringBuffer` with a newline and big indent.
-        let mut string = StringBuffer::new(true, 5, 32);
+        let string = StringBuffer::new(true, 5, 32);
         if !compare_str_ref(string.as_ref(), "") {
             panic!("Failed");
         }
@@ -261,4 +266,3 @@ mod string_buffer_tests {
         assert_eq!("    123\n    456789\n    0".to_string(), string.to_string());
     }
 }
-
