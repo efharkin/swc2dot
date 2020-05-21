@@ -6,21 +6,12 @@ use crate::components::{Graph, Vertex, ShortTree};
 use crate::config::Config;
 use crate::swc_parser::SWCCompartmentKind;
 
+/// Get a `String` representation of an object in DOT format.
 pub trait ToDot {
     fn to_dot(&self, leading_newline: bool, indent_level: u8) -> String;
 }
 
 static INDENT_SIZE: u8 = 4;
-
-/// Get a new `String` buffer, optionally on a new line and optinally indented.
-pub fn new_string_buffer(leading_newline: bool, indent_level: u8, capacity: usize) -> String {
-    let mut buf = String::with_capacity((1 + INDENT_SIZE*indent_level) as usize + capacity);
-    if leading_newline {
-        buf.push_str("\n");
-    }
-    buf.push_str(&indent(indent_level));
-    return buf;
-}
 
 /// Get a `String` of spaces for indenting.
 pub fn indent(level: u8) -> String {
@@ -34,15 +25,14 @@ pub fn indent(level: u8) -> String {
 impl ToDot for Vertex {
     /// Get a DOT representation of a single vertex.
     fn to_dot(&self, leading_newline: bool, indent_level: u8) -> String {
-        let mut vertex_str = new_string_buffer(leading_newline, indent_level, 32);
+        let mut vertex_str = StringBuffer::new(leading_newline, indent_level, 32);
         vertex_str.push_str(&self.get_id().to_string());
         vertex_str.push_str("; ");
-        vertex_str.shrink_to_fit();
-        return vertex_str;
+        return vertex_str.to_string();
     }
 }
 
-static graph_string_max_bufsize: usize = 5242880;
+static GRAPH_STRING_MAX_BUFSIZE: usize = 5242880;
 
 pub trait ConfiguredToDot {
     fn to_dot(&self, leading_newline: bool, indent_level: u8, config: &Config) -> String;
@@ -50,7 +40,7 @@ pub trait ConfiguredToDot {
 
 impl ConfiguredToDot for Graph {
     fn to_dot(&self, leading_newline: bool, indent_level: u8, config: &Config) -> String {
-        let mut graph_string = String::with_capacity(max(64 * self.len(), graph_string_max_bufsize));
+        let mut graph_string = String::with_capacity(max(64 * self.len(), GRAPH_STRING_MAX_BUFSIZE));
 
         graph_string.push_str("graph{");
 
@@ -240,7 +230,9 @@ impl StringBuffer {
     /// Returns an empty `String` if `push_str()` has never been called.
     fn to_string(&self) -> String {
         if self.has_been_written_to {
-            self.buf.clone()
+            let mut result = self.buf.clone();
+            result.shrink_to_fit();
+            result
         } else {
             self.empty_buf.clone()
         }
@@ -341,7 +333,7 @@ impl ToDot for ShortTree {
     ///
     /// Rooted trees of depth 1 can be written in one line in DOT.
     fn to_dot(&self, leading_newline: bool, indent_level: u8) -> String {
-        let mut tree_buf = new_string_buffer(leading_newline, indent_level, 128);
+        let mut tree_buf = StringBuffer::new(leading_newline, indent_level, 128);
 
         tree_buf.push_str(&self.get_root_id().to_string());
         match self.get_child_ids().len() {
@@ -350,6 +342,6 @@ impl ToDot for ShortTree {
             _ => tree_buf.push_str(&format!(" -- {{{}}}", self.get_child_ids().iter().format(", ")))
         }
         tree_buf.push_str(";");
-        return tree_buf;
+        return tree_buf.to_string();
     }
 }
