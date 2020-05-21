@@ -2,7 +2,7 @@ use std::cmp::max;
 
 use itertools::Itertools;
 
-use crate::components::{Graph, Vertex, ShortTree};
+use crate::components::{Graph, ShortTree, Vertex};
 use crate::config::Config;
 use crate::swc_parser::SWCCompartmentKind;
 
@@ -44,18 +44,67 @@ pub trait ConfiguredToDot {
 
 impl ConfiguredToDot for Graph {
     fn to_dot(&self, leading_newline: bool, indent_level: u8, config: &Config) -> String {
-        let mut graph_string = String::with_capacity(max(64 * self.len(), GRAPH_STRING_MAX_BUFSIZE));
+        let mut graph_string =
+            String::with_capacity(max(64 * self.len(), GRAPH_STRING_MAX_BUFSIZE));
 
         graph_string.push_str("graph{");
 
         // Node configuration
         let mut buffers = VertexConfigBuffers::new(true, indent_level + 2, 256);
-        buffers.weak_push_str_by_kind(SWCCompartmentKind::Axon, &format!("{}\n", config.get_config(SWCCompartmentKind::Axon).to_dot(false, indent_level + 2)));
-        buffers.weak_push_str_by_kind(SWCCompartmentKind::Soma, &format!("{}\n", config.get_config(SWCCompartmentKind::Soma).to_dot(false, indent_level + 2)));
-        buffers.weak_push_str_by_kind(SWCCompartmentKind::Dendrite, &format!("{}\n", config.get_config(SWCCompartmentKind::Dendrite).to_dot(false, indent_level + 2)));
-        buffers.weak_push_str_by_kind(SWCCompartmentKind::ApicalDendrite, &format!("{}\n", config.get_config(SWCCompartmentKind::ApicalDendrite).to_dot(false, indent_level + 2)));
-        buffers.weak_push_str_by_kind(SWCCompartmentKind::Undefined, &format!("{}\n", config.get_config(SWCCompartmentKind::Undefined).to_dot(false, indent_level + 2)));
-        buffers.weak_push_str_by_kind(SWCCompartmentKind::Custom, &format!("{}\n", config.get_config(SWCCompartmentKind::Custom).to_dot(false, indent_level + 2)));
+        buffers.weak_push_str_by_kind(
+            SWCCompartmentKind::Axon,
+            &format!(
+                "{}\n",
+                config
+                    .get_config(SWCCompartmentKind::Axon)
+                    .to_dot(false, indent_level + 2)
+            ),
+        );
+        buffers.weak_push_str_by_kind(
+            SWCCompartmentKind::Soma,
+            &format!(
+                "{}\n",
+                config
+                    .get_config(SWCCompartmentKind::Soma)
+                    .to_dot(false, indent_level + 2)
+            ),
+        );
+        buffers.weak_push_str_by_kind(
+            SWCCompartmentKind::Dendrite,
+            &format!(
+                "{}\n",
+                config
+                    .get_config(SWCCompartmentKind::Dendrite)
+                    .to_dot(false, indent_level + 2)
+            ),
+        );
+        buffers.weak_push_str_by_kind(
+            SWCCompartmentKind::ApicalDendrite,
+            &format!(
+                "{}\n",
+                config
+                    .get_config(SWCCompartmentKind::ApicalDendrite)
+                    .to_dot(false, indent_level + 2)
+            ),
+        );
+        buffers.weak_push_str_by_kind(
+            SWCCompartmentKind::Undefined,
+            &format!(
+                "{}\n",
+                config
+                    .get_config(SWCCompartmentKind::Undefined)
+                    .to_dot(false, indent_level + 2)
+            ),
+        );
+        buffers.weak_push_str_by_kind(
+            SWCCompartmentKind::Custom,
+            &format!(
+                "{}\n",
+                config
+                    .get_config(SWCCompartmentKind::Custom)
+                    .to_dot(false, indent_level + 2)
+            ),
+        );
         for (_, vertex) in self.iter_vertices() {
             buffers.push_str_by_kind(vertex.get_kind(), &vertex.to_dot(false, 0));
         }
@@ -80,7 +129,7 @@ struct VertexConfigBuffers {
     dendrite: StringBuffer,
     apicaldendrite: StringBuffer,
     undefined: StringBuffer,
-    custom: StringBuffer
+    custom: StringBuffer,
 }
 
 impl VertexConfigBuffers {
@@ -204,9 +253,12 @@ impl ToDot for ShortTree {
 
         tree_buf.push_str(&self.get_root_id().to_string());
         match self.get_child_ids().len() {
-            0 => {},
+            0 => {}
             1 => tree_buf.push_str(&format!(" -- {}", self.get_child_ids()[0])),
-            _ => tree_buf.push_str(&format!(" -- {{{}}}", self.get_child_ids().iter().format(", ")))
+            _ => tree_buf.push_str(&format!(
+                " -- {{{}}}",
+                self.get_child_ids().iter().format(", ")
+            )),
         }
         tree_buf.push_str(";");
         return tree_buf.to_string();
