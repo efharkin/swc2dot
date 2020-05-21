@@ -3,7 +3,7 @@ use std::fs::read_to_string;
 use linked_hash_map::{Entries, LinkedHashMap};
 use yaml_rust::{yaml::Yaml, YamlLoader};
 
-use crate::writer::{ToDot, indent, StringBuffer};
+use crate::writer::{ToDot, Indent, StringBuffer};
 use crate::swc_parser::SWCCompartmentKind;
 
 static OPTION_GROUPS: &'static [&'static str] =
@@ -176,8 +176,8 @@ impl ConfigOptionGroup {
 }
 
 impl ToDot for ConfigOptionGroup {
-    fn to_dot(&self, leading_newline: bool, indent_level: u8) -> String {
-        let mut config_string = StringBuffer::new(leading_newline, indent_level, 256);
+    fn to_dot(&self, leading_newline: bool, indent: Indent) -> String {
+        let mut config_string = StringBuffer::new(leading_newline, indent, 256);
 
         // Prefix.
         config_string.push_str("node [");

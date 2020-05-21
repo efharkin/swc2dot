@@ -151,6 +151,7 @@ pub struct Point {
     pub z: f64
 }
 
+/// Types of compartment defined by the most basic version of the SWC standard.
 #[derive(Copy, Clone)]
 pub enum SWCCompartmentKind {
     Undefined,
@@ -159,6 +160,12 @@ pub enum SWCCompartmentKind {
     Dendrite,
     ApicalDendrite,
     Custom
+}
+
+impl SWCCompartmentKind {
+    pub fn iter() -> SWCCompartmentKindIterator {
+        SWCCompartmentKindIterator::new()
+    }
 }
 
 impl From<usize> for SWCCompartmentKind {
@@ -172,6 +179,54 @@ impl From<usize> for SWCCompartmentKind {
             num if num >= 5 => SWCCompartmentKind::Custom,
             _ => panic!("kind is not usize")
         }
+    }
+}
+
+impl IntoIterator for SWCCompartmentKind {
+    type Item = SWCCompartmentKind;
+    type IntoIter = SWCCompartmentKindIterator;
+
+    fn into_iter(self) -> SWCCompartmentKindIterator {
+        SWCCompartmentKindIterator::new()
+    }
+}
+
+/// Iterator over variants of `SWCCompartmentKind`
+pub struct SWCCompartmentKindIterator {
+    kinds: [SWCCompartmentKind; 6],
+    ptr: usize
+}
+
+impl SWCCompartmentKindIterator {
+    pub fn new() -> SWCCompartmentKindIterator {
+        SWCCompartmentKindIterator {
+            kinds: [
+                SWCCompartmentKind::Undefined,
+                SWCCompartmentKind::Soma,
+                SWCCompartmentKind::Axon,
+                SWCCompartmentKind::Dendrite,
+                SWCCompartmentKind::ApicalDendrite,
+                SWCCompartmentKind::Custom,
+            ],
+            ptr: 0
+        }
+    }
+}
+
+/// Iterate over variants of `SWCCompartmentKind` in no particular order.
+impl Iterator for SWCCompartmentKindIterator {
+    type Item = SWCCompartmentKind;
+
+    /// Get the next SWCComparmentKind
+    fn next(&mut self) -> Option<SWCCompartmentKind> {
+        let result;
+        if self.ptr < self.kinds.len() {
+            result = Some(self.kinds[self.ptr]);
+            self.ptr += 1;
+        } else {
+            result = None;
+        }
+        return result;
     }
 }
 

@@ -1,5 +1,3 @@
-use super::{indent, INDENT_SIZE};
-
 /// A `String` buffer that will appear to be empty if it has never been modified.
 #[derive(Clone, Debug)]
 pub struct StringBuffer {
@@ -13,19 +11,19 @@ pub struct StringBuffer {
 
 impl StringBuffer {
     /// Create a new `StringBuffer`.
-    pub fn new(leading_newline: bool, indent_level: u8, capacity: usize) -> StringBuffer {
-        let mut buf = String::with_capacity((1 + INDENT_SIZE * indent_level) as usize + capacity);
+    pub fn new(leading_newline: bool, indent: Indent, capacity: usize) -> StringBuffer {
+        let mut buf = String::with_capacity((32 + INDENT_SIZE * indent.first) as usize + capacity);
 
         if leading_newline {
             buf.push_str("\n");
         }
-        buf.push_str(&indent(indent_level));
+        buf.push_str(&get_indent(indent.first));
 
         let mut string_buffer = StringBuffer {
             buf: buf,
             empty_buf: "".to_string(),
             has_been_written_to: false,
-            indent_level: indent_level,
+            indent_level: indent.main,
             line_width: 80,
             cursor_position: 0,
         };
@@ -48,7 +46,7 @@ impl StringBuffer {
     /// Does not mark the buffer as modified.
     pub fn newline(&mut self) {
         self.buf.push_str("\n");
-        self.buf.push_str(&indent(self.indent_level));
+        self.buf.push_str(&get_indent(self.indent_level));
         self.cursor_position = self.newline_cursor_position();
         self.assert_cursor_is_within_line();
     }
@@ -160,20 +158,20 @@ mod string_buffer_tests {
     #[test]
     fn returns_empty_if_push_str_is_never_called() {
         // Initialize a `StringBuffer` with a newline and big indent.
-        let string = StringBuffer::new(true, 5, 32);
+        let string = StringBuffer::new(true, Indent::flat(5), 32);
         assert_eq!("".to_string(), string.to_string())
     }
 
     #[test]
     fn returns_indented_if_push_str_is_called() {
-        let mut string = StringBuffer::new(false, 1, 32);
+        let mut string = StringBuffer::new(false, Indent::flat(1), 32);
         string.push_str("something");
         assert_eq!("    something".to_string(), string.to_string());
     }
 
     #[test]
     fn returns_newline_if_push_str_is_called() {
-        let mut string = StringBuffer::new(true, 0, 32);
+        let mut string = StringBuffer::new(true, Indent::flat(0), 32);
         string.push_str("something");
         assert_eq!("\nsomething".to_string(), string.to_string());
     }
@@ -185,7 +183,7 @@ mod string_buffer_tests {
     #[test]
     fn asref_str_empty_if_push_str_is_never_called() {
         // Initialize a `StringBuffer` with a newline and big indent.
-        let string = StringBuffer::new(true, 5, 32);
+        let string = StringBuffer::new(true, Indent::flat(5), 32);
         if !compare_str_ref(string.as_ref(), "") {
             panic!("Failed");
         }
@@ -193,7 +191,7 @@ mod string_buffer_tests {
 
     #[test]
     fn asref_str_indented_if_push_str_is_called() {
-        let mut string = StringBuffer::new(false, 1, 32);
+        let mut string = StringBuffer::new(false, Indent::flat(1), 32);
         string.push_str("something");
         if !compare_str_ref(string.as_ref(), "    something") {
             panic!("Failed");
@@ -202,7 +200,7 @@ mod string_buffer_tests {
 
     #[test]
     fn asref_str_newline_if_push_str_is_called() {
-        let mut string = StringBuffer::new(true, 0, 32);
+        let mut string = StringBuffer::new(true, Indent::flat(0), 32);
         string.push_str("something");
         if !compare_str_ref(string.as_ref(), "\nsomething") {
             panic!("Failed");
@@ -213,7 +211,7 @@ mod string_buffer_tests {
 
     #[test]
     fn hard_wrap_short_line_without_indent() {
-        let mut string = StringBuffer::new(false, 0, 32);
+        let mut string = StringBuffer::new(false, Indent::flat(0), 32);
         string.line_width = 4;
         string.push_str("123");
         string.push_str("456");
@@ -222,7 +220,7 @@ mod string_buffer_tests {
 
     #[test]
     fn hard_wrap_full_line_without_indent() {
-        let mut string = StringBuffer::new(false, 0, 32);
+        let mut string = StringBuffer::new(false, Indent::flat(0), 32);
         string.line_width = 4;
         string.push_str("1234");
         string.push_str("5678");
@@ -231,7 +229,7 @@ mod string_buffer_tests {
 
     #[test]
     fn hard_wrap_short_line_with_indent() {
-        let mut string = StringBuffer::new(false, 1, 32);
+        let mut string = StringBuffer::new(false, Indent::flat(1), 32);
         string.line_width = 8;
         string.push_str("123");
         string.push_str("456");
@@ -240,7 +238,7 @@ mod string_buffer_tests {
 
     #[test]
     fn hard_wrap_full_line_with_indent() {
-        let mut string = StringBuffer::new(false, 1, 32);
+        let mut string = StringBuffer::new(false, Indent::flat(1), 32);
         string.line_width = 8;
         string.push_str("1234");
         string.push_str("5678");
@@ -249,7 +247,7 @@ mod string_buffer_tests {
 
     #[test]
     fn hard_wrap_long_line_without_indent() {
-        let mut string = StringBuffer::new(false, 0, 32);
+        let mut string = StringBuffer::new(false, Indent::flat(0), 32);
         string.line_width = 4;
         string.push_str("12345");
         string.push_str("678");
@@ -258,7 +256,7 @@ mod string_buffer_tests {
 
     #[test]
     fn hard_wrap_long_second_line_with_indent() {
-        let mut string = StringBuffer::new(false, 1, 32);
+        let mut string = StringBuffer::new(false, Indent::flat(1), 32);
         string.line_width = 8;
         string.push_str("123");
         string.push_str("456789");
@@ -266,3 +264,106 @@ mod string_buffer_tests {
         assert_eq!("    123\n    456789\n    0".to_string(), string.to_string());
     }
 }
+
+/*
+pub enum Indent {
+    /// Set the indent of the first line to a different level than subsequent lines.
+    ///
+    /// `AbsoluteFirstLine(first_line_level, subsequent_lines)`
+    AbsoluteFirstLine(u8, u8),
+    /// Set the indent level of the first line relative to subsequent lines.
+    ///
+    /// `RelativeFirstLine(relative_first_line_level, subsequent_lines)`
+    ///
+    /// # Note
+    ///
+    /// `RelativeFirstLine(-1, 1)` is equivalent to `AbsoluteFirstLine(0, 1)`.
+    RelativeFirstLine(i8, u8),
+    /// All lines are indented to the same level.
+    Flat(u8)
+}
+*/
+
+/// Indentation style
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub struct Indent {
+    /// Indentation of the first line
+    pub first: u8,
+    /// Indentation of all subsequent lines
+    pub main: u8
+}
+
+impl Indent {
+    /// Indent first line to a different level.
+    ///
+    /// # Equivalence
+    ///
+    /// ```rust
+    /// let absolute_indent = Indent::absolute_first_line(2, 3);
+    /// let relative_indent = Indent::relative_first_line(-1, 3);
+    ///
+    /// assert_eq!(absolute_indent, relative_indent);
+    /// ```
+    pub fn absolute_first_line(first_line_level: u8, main_indent_level: u8) -> Indent {
+        Indent{
+            first: first_line_level,
+            main: main_indent_level
+        }
+    }
+
+    /// Offset indent level of first line.
+    ///
+    /// # Equivalence
+    ///
+    /// ```rust
+    /// let relative_indent = Indent::relative_first_line(-1, 3);
+    /// let absolute_indent = Indent::absolute_first_line(2, 3);
+    ///
+    /// assert_eq!(absolute_indent, relative_indent);
+    /// ```
+    pub fn relative_first_line(first_line_level: i8, main_indent_level: u8) -> Indent {
+        Indent {
+            first: (main_indent_level as i16 - first_line_level as i16) as u8,
+            main: main_indent_level
+        }
+    }
+
+    /// Indent all lines to the same level.
+    ///
+    /// # Equivalence
+    ///
+    /// ```rust
+    /// let flat_indent = Indent::flat(3);
+    /// let absolute_indent = Indent::absolute_first_line(3, 3);
+    /// let relative_indent = Indent::relative_first_line(0, 3);
+    ///
+    /// assert_eq!(flat_indent, absolute_indent);
+    /// assert_eq!(flat_indent, relative_indent);
+    /// ```
+    pub fn flat(indent_level: u8) -> Indent {
+        Indent {
+            first: indent_level,
+            main: indent_level
+        }
+    }
+
+    /// Convenience function to get a flat zero indent.
+    pub fn zero() -> Indent {
+        Indent {
+            first: 0,
+            main: 0
+        }
+    }
+}
+
+static INDENT_SIZE: u8 = 4;
+
+/// Get a `String` of spaces for indenting.
+pub fn get_indent(level: u8) -> String {
+    let mut buf = String::with_capacity((level * INDENT_SIZE) as usize);
+    for _ in 0..level {
+        buf.push_str("    ");
+    }
+    return buf;
+}
+
