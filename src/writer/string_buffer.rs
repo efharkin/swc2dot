@@ -19,15 +19,14 @@ impl StringBuffer {
         }
         buf.push_str(&get_indent(indent.first));
 
-        let mut string_buffer = StringBuffer {
+        let string_buffer = StringBuffer {
             buf: buf,
             empty_buf: "".to_string(),
             has_been_written_to: false,
             indent_level: indent.main,
             line_width: 80,
-            cursor_position: 0,
+            cursor_position: (INDENT_SIZE * indent.first) as u32,
         };
-        string_buffer.cursor_position = string_buffer.newline_cursor_position();
         string_buffer.assert_cursor_is_within_line();
 
         return string_buffer;

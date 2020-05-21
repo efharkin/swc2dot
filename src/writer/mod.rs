@@ -32,7 +32,7 @@ pub trait ConfiguredToDot {
 }
 
 impl ConfiguredToDot for Graph {
-    fn to_dot(&self, leading_newline: bool, indent: Indent, config: &Config) -> String {
+    fn to_dot(&self, _leading_newline: bool, indent: Indent, config: &Config) -> String {
         let mut graph_string =
             String::with_capacity(max(64 * self.len(), GRAPH_STRING_MAX_BUFSIZE));
 
@@ -43,6 +43,7 @@ impl ConfiguredToDot for Graph {
 
         for kind in SWCCompartmentKind::iter() {
             buffers.weak_push_str_by_kind(kind, &config.get_config(kind).to_dot(false, Indent::absolute_first_line(0, indent.main + 2)));
+            buffers.weak_push_str_by_kind(kind, " ")
         }
         for (_, vertex) in self.iter_vertices() {
             buffers.push_str_by_kind(vertex.get_kind(), &vertex.to_dot(false, Indent::zero()));
