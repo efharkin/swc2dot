@@ -3,7 +3,7 @@ use std::fs::read_to_string;
 use linked_hash_map::{Entries, LinkedHashMap};
 use yaml_rust::{yaml::Yaml, YamlLoader};
 
-use crate::writer::{ToDot, indent};
+use crate::writer::{ToDot, indent, StringBuffer};
 use crate::swc_parser::SWCCompartmentKind;
 
 static OPTION_GROUPS: &'static [&'static str] =
@@ -177,45 +177,32 @@ impl ConfigOptionGroup {
 
 impl ToDot for ConfigOptionGroup {
     fn to_dot(&self, leading_newline: bool, indent_level: u8) -> String {
-        let mut config_string = String::with_capacity(256);
+        let mut config_string = StringBuffer::new(leading_newline, indent_level, 256);
 
-        // Prefix
-        if leading_newline {
-            config_string.push_str("\n");
-        }
-        config_string.push_str(&indent(indent_level));
+        // Prefix.
         config_string.push_str("node [");
 
         let mut options_iterator = self.options.iter();
         // First option
         let (key, val) = options_iterator.next().unwrap();
-        config_string.push_str(&key);
         match val {
-            Some(val) => {
-                config_string.push_str("=");
-                config_string.push_str(&val);
-            },
-            None => {}
+            Some(val) => config_string.push_str(&format!("{}={}", key, val)),
+            None => config_string.push_str(&key)
         }
 
         // All subsequent options
         for (key, val) in options_iterator {
             config_string.push_str(",");
-            config_string.push_str(&key);
             match val {
-                Some(val) => {
-                    config_string.push_str("=");
-                    config_string.push_str(&val);
-                },
-                None => {}
+                Some(val) => config_string.push_str(&format!("{}={}", key, val)),
+                None => config_string.push_str(&key)
             }
         }
 
         // Close delimiter.
         config_string.push_str("];");
 
-        config_string.shrink_to_fit();
-        return config_string;
+        return config_string.to_string();
     }
 }
 

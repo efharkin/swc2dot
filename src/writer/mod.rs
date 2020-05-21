@@ -49,18 +49,18 @@ impl ConfiguredToDot for Graph {
         graph_string.push_str("graph{");
 
         // Node configuration
-        let mut buffers = VertexConfigBuffers::new(true, indent_level + 1, 256);
-        buffers.weak_push_str_by_kind(SWCCompartmentKind::Axon, &format!("{}\n", config.get_config(SWCCompartmentKind::Axon).to_dot(false, 0)));
-        buffers.weak_push_str_by_kind(SWCCompartmentKind::Soma, &format!("{}\n", config.get_config(SWCCompartmentKind::Soma).to_dot(false, 0)));
-        buffers.weak_push_str_by_kind(SWCCompartmentKind::Dendrite, &format!("{}\n", config.get_config(SWCCompartmentKind::Dendrite).to_dot(false, 0)));
-        buffers.weak_push_str_by_kind(SWCCompartmentKind::ApicalDendrite, &format!("{}\n", config.get_config(SWCCompartmentKind::ApicalDendrite).to_dot(false, 0)));
-        buffers.weak_push_str_by_kind(SWCCompartmentKind::Undefined, &format!("{}\n", config.get_config(SWCCompartmentKind::Undefined).to_dot(false, 0)));
-        buffers.weak_push_str_by_kind(SWCCompartmentKind::Custom, &format!("{}\n", config.get_config(SWCCompartmentKind::Custom).to_dot(false, 0)));
+        let mut buffers = VertexConfigBuffers::new(true, indent_level + 2, 256);
+        buffers.weak_push_str_by_kind(SWCCompartmentKind::Axon, &format!("{}\n", config.get_config(SWCCompartmentKind::Axon).to_dot(false, indent_level + 2)));
+        buffers.weak_push_str_by_kind(SWCCompartmentKind::Soma, &format!("{}\n", config.get_config(SWCCompartmentKind::Soma).to_dot(false, indent_level + 2)));
+        buffers.weak_push_str_by_kind(SWCCompartmentKind::Dendrite, &format!("{}\n", config.get_config(SWCCompartmentKind::Dendrite).to_dot(false, indent_level + 2)));
+        buffers.weak_push_str_by_kind(SWCCompartmentKind::ApicalDendrite, &format!("{}\n", config.get_config(SWCCompartmentKind::ApicalDendrite).to_dot(false, indent_level + 2)));
+        buffers.weak_push_str_by_kind(SWCCompartmentKind::Undefined, &format!("{}\n", config.get_config(SWCCompartmentKind::Undefined).to_dot(false, indent_level + 2)));
+        buffers.weak_push_str_by_kind(SWCCompartmentKind::Custom, &format!("{}\n", config.get_config(SWCCompartmentKind::Custom).to_dot(false, indent_level + 2)));
         for (_, vertex) in self.iter_vertices() {
             buffers.push_str_by_kind(vertex.get_kind(), &vertex.to_dot(false, 0));
         }
 
-        graph_string.push_str(&buffers.to_dot(true, indent_level + 2));
+        graph_string.push_str(&buffers.to_dot(true, indent_level + 1));
 
         // Write edges
         for short_tree in self.iter_short_trees() {
