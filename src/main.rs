@@ -16,10 +16,14 @@ use config::Config;
 
 fn main() {
     let cli_matches = get_cli_arguments();
-    let config: Config;
+    let mut config: Config;
     match Config::new() {
         Ok(c) => config = c,
         _ => panic!("Could not load default config")
+    }
+    match cli_matches.value_of("config") {
+        Some(config_file) => {config.try_overload_from_file(&config_file.to_string());},
+        None => {},
     }
 
     let swcneuron = parse_file(cli_matches.value_of("INPUT").expect("Could not get input.").to_string());

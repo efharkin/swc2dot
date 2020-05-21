@@ -18,5 +18,12 @@ pub fn get_cli_arguments<'a>() -> ArgMatches<'a> {
                    .index(1)
                    .required(true)
               )
+              .arg(Arg::with_name("config")
+                  .short("c")
+                  .long("config")
+                  .help("Configuration file for node attributes.")
+                  .value_name("FILE")
+                  .takes_value(true)
+              )
               .get_matches()
 }
