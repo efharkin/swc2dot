@@ -52,29 +52,22 @@ impl StringBuffer {
 
     /// Push `&str` onto the end of `StringBuffer`, but don't flag the buffer as modified.
     pub fn weak_push_str(&mut self, string: &str) {
-        self.assert_cursor_is_within_line();
-
         // Start on a new line if we will run out of room on the current one,
         // unless we're already at the start of a line.
         if (string.len() > self.remaining_space_on_line() as usize)
             & (self.cursor_position > self.newline_cursor_position())
+            | (self.remaining_space_on_line() <= 0)
         {
-            self.newline();
+            if !string.starts_with("\n") {
+                self.newline();
+            }
         }
 
         // Add the string to the buffer
         self.buf.push_str(string);
 
         // Update cursor position
-        if string.len() as u32 + self.cursor_position <= self.line_width {
-            self.cursor_position += string.len() as u32;
-        } else {
-            // If the cursor went off the end of the line, go to a new line.
-            self.newline();
-            assert_eq!(self.cursor_position, self.newline_cursor_position());
-        }
-
-        self.assert_cursor_is_within_line();
+        self.cursor_position += string.len() as u32;
     }
 
     /// Get contents of `StringBuffer`.
@@ -107,9 +100,8 @@ impl StringBuffer {
 
     /// Get the remaining amount of space on the current line.
     #[inline]
-    fn remaining_space_on_line(&self) -> u32 {
-        self.assert_cursor_is_within_line();
-        self.line_width - self.cursor_position
+    fn remaining_space_on_line(&self) -> i32 {
+        (self.line_width as i64 - self.cursor_position as i64) as i32
     }
 
     /// Assert that cursor is within the length of one line.

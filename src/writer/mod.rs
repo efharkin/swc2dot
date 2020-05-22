@@ -42,14 +42,14 @@ impl ConfiguredToDot for Graph {
         let mut buffers = VertexConfigBuffers::new(true, Indent::flat(indent.main + 2), 256);
 
         for kind in SWCCompartmentKind::iter() {
-            buffers.weak_push_str_by_kind(kind, &config.get_config(kind).to_dot(false, Indent::absolute_first_line(0, indent.main + 2)));
-            buffers.weak_push_str_by_kind(kind, " ")
+            buffers.weak_push_str_by_kind(kind, &config.get_config(kind).to_dot(false, Indent::zero()));
+            buffers.weak_push_str_by_kind(kind, " ");
         }
         for (_, vertex) in self.iter_vertices() {
             buffers.push_str_by_kind(vertex.get_kind(), &vertex.to_dot(false, Indent::zero()));
         }
 
-        graph_string.push_str(&buffers.to_dot(true, Indent::flat(indent.main + 1)));
+        graph_string.push_str(&buffers.to_dot(false, Indent::flat(indent.main + 1)));
 
         // Write edges
         for short_tree in self.iter_short_trees() {
@@ -131,22 +131,18 @@ impl ToDot for VertexConfigBuffers {
         }
 
         if self.soma.len() > 0 {
-            vertex_config_buf.push_str("\n");
-            vertex_config_buf.push_str(&get_indent(indent.main));
+            vertex_config_buf.newline();
             vertex_config_buf.push_str("{");
             vertex_config_buf.push_str(self.soma.as_ref());
-            vertex_config_buf.push_str("\n");
-            vertex_config_buf.push_str(&get_indent(indent.main));
+            vertex_config_buf.newline();
             vertex_config_buf.push_str("}");
         }
 
         if self.dendrite.len() > 0 {
-            vertex_config_buf.push_str("\n");
-            vertex_config_buf.push_str(&get_indent(indent.main));
+            vertex_config_buf.newline();
             vertex_config_buf.push_str("{");
             vertex_config_buf.push_str(self.dendrite.as_ref());
-            vertex_config_buf.push_str("\n");
-            vertex_config_buf.push_str(&get_indent(indent.main));
+            vertex_config_buf.newline();
             vertex_config_buf.push_str("}");
         }
 
