@@ -1,22 +1,33 @@
 soma:
   shape: diamond
+  style: filled
   fillcolor: green
+  fontname: helvetica
 
 axon:
   shape: invtriangle
+  fontname: helvetica
 
 dendrite:
   shape: ellipse
+  style: filled
   fillcolor: blue
+  fontname: helvetica
 
 apicaldendrite:
   shape: ellipse
+  style: filled
   fillcolor: blue
+  fontname: helvetica
 
 undefined:
   shape: doubleoctagon
+  style: filled
   fillcolor: red
+  fontname: helvetica
 
 custom:
   shape: tripleoctagon
+  style: filled
   fillcolor: red
+  fontname: helvetica
