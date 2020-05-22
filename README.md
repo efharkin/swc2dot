@@ -18,7 +18,7 @@ beautiful](http://www.neuronland.org/NLMorphologyConverter/MorphologyFormats/SWC
 
 The SWC format provides a minimal description of the morphology of a neuron as
 an acyclic graph of tapered cylinders arranged in 3D space. While SWC is well
-supported by specialized software packages for neuron modeling, it is not
+supported by specialized software packages for neuron modelling, it is not
 supported by more general programs for visualizing and manipulating graphs.
 
 swc2dot converts neuron morphologies stored in SWC to human-readable [DOT
@@ -26,15 +26,26 @@ format](https://graphs.grevian.org/example) supported by
 [Graphviz](https://www.graphviz.org), [Gephi](https://gephi.org),
 [NetworkX](https://networkx.github.io), and others.
 
-## Example
+## Usage
 
-swc2dot can be invoked from the command line as follows
-```sh
-swc2dot -o morphological_graph.dot morphology.swc
+The command-line interface is very simple:
+
+```
+swc2dot [OPTIONS] <INPUT> --output <FILE>
 ```
 
-Contents of `morphology.swc` input file:
+`<INPUT>` should be a neuron morphology in SWC format, and `<FILE>` will be the
+name of the resulting DOT file (recommended extension `.gv` or `.dot`).
+
+See `swc2dot --help` for more information.
+
+### Example
+
+Suppose we have a file called `morphology.swc` that we want to convert. The
+contents of the file might look something like this:
 ```
+# Metadata...
+#
 1 1 0 0 0 6.86102 -1
 2 1 6.31 2.7 0 6.86102 1
 3 1 -6.3 -2.7 0 6.86102 1
@@ -49,36 +60,92 @@ Contents of `morphology.swc` input file:
 12 3 -63.58 -104 0 0.3125 11
 ...
 ```
+(This example is taken from neuron
+[NMO_66824](http://www.neuromorpho.org/neuron_info.jsp?neuron_name=N3_6) on
+[NeuroMorpho.org](http://www.neuromorpho.org).)
 
-Contents of `morphological_graph.dot` output file:
+The SWC morphology can be converted to DOT with the following swc2dot command:
+```bash
+$ swc2dot morphology.swc --output morphological_graph.dot
+```
+
+The result is placed in `morphological_graph.dot` and looks something like this:
 ```dot
 graph{
+    {
+        node [shape=diamond,style=filled,fillcolor=green,fontname=helvetica];
+        1; 2; 3;
+    }
+    {
+        node [shape=ellipse,style=filled,fillcolor=blue,fontname=helvetica]; 4;
+        5; 6; 7; 8; 9; 10; 11; 12; 13; 14; 15; 16; 17; 18; 19; 20; 21; 22; 23;
+        24; 25; 26; 27; 28; 29; 30; 31; 32; 33; 34; 35; 36; 37; 38; 39; 40; 41;
+        ...
+    }
     1 -- {2, 3, 4, 14, 28, 45, 76, 101};
+    2;
+    3;
     4 -- 5;
     5 -- {6, 7};
+    6;
     7 -- 8;
     8 -- 9;
     9 -- 10;
-    10 -- 11;
-    11 -- 12;
-    12 -- 13;
-    14 -- 15;
-    15 -- {16, 21};
     ...
 }
+```
+
+The node configuration blocks at the top (eg `{ node [shape=diamond,...]; 1; 2;
+3; }`) control how compartments of a given type (as determined by the SWC
+compartment code) should be rendered by a graph visualization program. In this
+case, somatic the three somatic nodes should be rendered as green diamonds, and
+the dendritic nodes should be rendered as blue ellipses. swc2dot supports
+adding arbitrary node attributes by compartment type (see below). After the
+configuration blocks, the rest of the DOT `graph` specifies which compartments
+are connected to eachother (eg `1 -- {2, 3, 4, 14, ...};` means that node `1`
+is connected to nodes `2`, `3`, `4`, `14`, etc.).
+
+We can visualize the morphological graph using any program that supports DOT
+format. Example using Graphviz's neato (`neato -o example.png -Tpng
+morphological_graph.dot`):
+
+![Example morphological graph](doc/example.png)
+
+### Custom configuration
+
+swc2dot supports adding arbitrary node attributes according to SWC compartment
+type using a YAML configuration file (see `src/default_config.yml`
+[here](src/default_config.yml) for an example of how the configuration file
+should be formatted) passed to swc2dot using the `--config` or `-c` flag.
+
+For example, you might have a SWC morphology in which all "Custom"-type
+compartments represent dendritic spines. You could add the attribute
+`kind=spine` to the corresponding nodes and color them red by creating a
+configuration file called `spine_config.yml` (or something similar) with the
+following contents.
+
+```yaml
+custom:
+    kind: spine
+    style: filled
+    fillcolor: red
+```
+
+Then when you use swc2dot, just supply `spine_config.yml` using the `--config`
+flag.
+
+```bash
+$ swc2dot --config spine_config.yml --output spiny.dot my_spiny_neuron.swc
 ```
 
 ## Installation
 
 ### Build from source
 
-Unfortunately, for now the only way to install swc2dot is to build it from
-source. Fortunately, this is very easy.
-
 You'll need a working Rust compiler together with the build manager Cargo to
-build swc2dot. The easiest way to get set up is with
-[rustup](https://rustup.rs). Try running `cargo  --version` in a
-terminal afterwards to make sure everything worked.
+build swc2dot. The easiest way to get set up is to install
+[rustup](https://rustup.rs). Try running `cargo  --version` afterwards to make
+sure everything worked.
 
 Next, get a copy of the swc2dot git repository and open it in a terminal. On
 MacOS or Linux, you can do this by pasting `git clone --depth 1
