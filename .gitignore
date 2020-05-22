@@ -1,2 +1,5 @@
 /target
 /release
+
+# System files
+.DS_Store
