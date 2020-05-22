@@ -140,6 +140,14 @@ $ swc2dot --config spine_config.yml --output spiny.dot my_spiny_neuron.swc
 
 ## Installation
 
+### MacOS
+
+Download a tarball containing a pre-built binary from the
+[releases](https://github.com/efharkin/swc2dot/releases) page (look for
+`swc2dot-<version>-x86_64-apple-darwin.tar.gz` under Assets), unzip it, and
+place the swc2dot executable anywhere in your `PATH`. Test your installation by
+running `swc2dot --help`.
+
 ### Build from source
 
 You'll need a working Rust compiler together with the build manager Cargo to
