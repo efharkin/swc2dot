@@ -162,6 +162,20 @@ pub enum SWCCompartmentKind {
     Custom
 }
 
+use std::fmt;
+impl fmt::Display for SWCCompartmentKind {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match *self {
+            SWCCompartmentKind::Undefined => write!(f, "undefined"),
+            SWCCompartmentKind::Soma => write!(f, "somatic"),
+            SWCCompartmentKind::Axon => write!(f, "axonal"),
+            SWCCompartmentKind::Dendrite => write!(f, "(basal) dendritic"),
+            SWCCompartmentKind::ApicalDendrite => write!(f, "apical dendritic"),
+            SWCCompartmentKind::Custom => write!(f, "custom"),
+        }
+    }
+}
+
 impl SWCCompartmentKind {
     pub fn iter() -> SWCCompartmentKindIterator {
         SWCCompartmentKindIterator::new()

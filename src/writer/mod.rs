@@ -69,7 +69,6 @@ impl ConfiguredToDot for Graph {
     }
 }
 
-///
 mod vertex_config_formatter {
     use super::*;
 
@@ -85,10 +84,24 @@ mod vertex_config_formatter {
             capacity: usize,
         ) -> VertexConfigFormatter {
             let mut vertex_config_strings = HashMap::with_capacity(6);
-            for key in SWCCompartmentKind::iter() {
-                vertex_config_strings
-                    .insert(key, StringBuffer::new(leading_newline, indent, capacity));
+
+            for compartment_kind in SWCCompartmentKind::iter() {
+                // Allocate buffer for vertex configuration settings for this compartment type.
+                let mut compartment_config_string =
+                    StringBuffer::new(leading_newline, indent, capacity);
+
+                // Add a descriptive header.
+                compartment_config_string.weak_push_str(&format!(
+                    "/* Configuration for {} vertices. */",
+                    compartment_kind
+                ));
+                compartment_config_string.newline();
+
+                // Insert it into HashMap that will be stored in the VertexConfigFormatter.
+                vertex_config_strings.insert(compartment_kind, compartment_config_string);
             }
+
+            // Construct the new VertexConfigFormatter
             VertexConfigFormatter {
                 vertex_config_strings: vertex_config_strings,
             }
