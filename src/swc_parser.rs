@@ -152,7 +152,7 @@ pub struct Point {
 }
 
 /// Types of compartment defined by the most basic version of the SWC standard.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Eq, Hash, Debug)]
 pub enum SWCCompartmentKind {
     Undefined,
     Soma,

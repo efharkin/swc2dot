@@ -1,4 +1,5 @@
 use std::cmp::max;
+use std::collections::HashMap;
 
 use itertools::Itertools;
 
@@ -27,6 +28,11 @@ impl ToDot for Vertex {
 
 static GRAPH_STRING_MAX_BUFSIZE: usize = 5242880;
 
+/// Get a configured `String` representation of an object in DOT format.
+///
+/// # See also
+///
+/// - `ToDot` trait
 pub trait ConfiguredToDot {
     fn to_dot(&self, leading_newline: bool, indent: Indent, config: &Config) -> String;
 }
@@ -39,14 +45,15 @@ impl ConfiguredToDot for Graph {
         graph_string.push_str("graph{");
 
         // Node configuration
-        let mut buffers = VertexConfigBuffers::new(true, Indent::flat(indent.main + 2), 256);
+        use vertex_config_formatter::VertexConfigFormatter;
+        let mut buffers = VertexConfigFormatter::new(true, Indent::flat(indent.main + 2), 256);
 
         for kind in SWCCompartmentKind::iter() {
-            buffers.weak_push_str_by_kind(kind, &config.get_config(kind).to_dot(false, Indent::zero()));
-            buffers.weak_push_str_by_kind(kind, " ");
+            buffers.weak_push_config_str(kind, &config.get_config(kind).to_dot(false, Indent::zero()));
+            buffers.weak_push_config_str(kind, " ");
         }
         for (_, vertex) in self.iter_vertices() {
-            buffers.push_str_by_kind(vertex.get_kind(), &vertex.to_dot(false, Indent::zero()));
+            buffers.push_config_str(vertex.get_kind(), &vertex.to_dot(false, Indent::zero()));
         }
 
         graph_string.push_str(&buffers.to_dot(false, Indent::flat(indent.main + 1)));
@@ -62,121 +69,97 @@ impl ConfiguredToDot for Graph {
     }
 }
 
-/// Struct for holding Vertex config strings
-struct VertexConfigBuffers {
-    axon: StringBuffer,
-    soma: StringBuffer,
-    dendrite: StringBuffer,
-    apicaldendrite: StringBuffer,
-    undefined: StringBuffer,
-    custom: StringBuffer,
-}
+///
+mod vertex_config_formatter {
+    use super::*;
 
-impl VertexConfigBuffers {
-    fn new(leading_newline: bool, indent: Indent, capacity: usize) -> VertexConfigBuffers {
-        VertexConfigBuffers {
-            axon: StringBuffer::new(leading_newline, indent, capacity),
-            soma: StringBuffer::new(leading_newline, indent, capacity),
-            dendrite: StringBuffer::new(leading_newline, indent, capacity),
-            apicaldendrite: StringBuffer::new(leading_newline, indent, capacity),
-            undefined: StringBuffer::new(leading_newline, indent, capacity),
-            custom: StringBuffer::new(leading_newline, indent, capacity),
+    /// Pretty formatting of `Vertex` attributes in DOT language.
+    pub struct VertexConfigFormatter {
+        vertex_config_strings: HashMap<SWCCompartmentKind, StringBuffer>,
+    }
+
+    impl VertexConfigFormatter {
+        pub fn new(
+            leading_newline: bool,
+            indent: Indent,
+            capacity: usize,
+        ) -> VertexConfigFormatter {
+            let mut vertex_config_strings = HashMap::with_capacity(6);
+            for key in SWCCompartmentKind::iter() {
+                vertex_config_strings
+                    .insert(key, StringBuffer::new(leading_newline, indent, capacity));
+            }
+            VertexConfigFormatter {
+                vertex_config_strings: vertex_config_strings,
+            }
+        }
+
+        pub fn push_config_str(&mut self, vertex_kind: SWCCompartmentKind, string: &str) {
+            let config_buffer: &mut StringBuffer = self
+                .vertex_config_strings
+                .get_mut(&vertex_kind)
+                .expect(&format!(
+                    "{:?} not found in VertexConfigBuffers instance",
+                    vertex_kind
+                ));
+            config_buffer.push_str(string);
+        }
+
+        /// Add an optional component to the config string.
+        ///
+        /// Config strings that only contain optional components are ignored by
+        /// `to_dot()`.
+        ///
+        /// # Recommended use case
+        ///
+        /// Use this method to add configuration details for compartment types that may or may
+        /// not exist in the current graph, and use `push_config_str()` to add the names of all
+        /// compartments of the given type (if any exist). If there are no compartments of the
+        /// given type, `push_config_str()` will never be called, and the configuration details
+        /// added using `weak_push_config_str()` will be left out of the output of `to_dot()`.
+        pub fn weak_push_config_str(&mut self, vertex_kind: SWCCompartmentKind, string: &str) {
+            let config_buffer: &mut StringBuffer = self
+                .vertex_config_strings
+                .get_mut(&vertex_kind)
+                .expect(&format!(
+                    "{:?} not found in VertexConfigBuffers instance",
+                    vertex_kind
+                ));
+            config_buffer.weak_push_str(string);
+        }
+
+        pub fn len(&self) -> usize {
+            let mut total_length: usize = 0;
+            for val in self.vertex_config_strings.values() {
+                total_length += val.len();
+            }
+            return total_length;
         }
     }
 
-    fn push_str_by_kind(&mut self, kind: SWCCompartmentKind, string: &str) {
-        match kind {
-            SWCCompartmentKind::Axon => self.axon.push_str(string),
-            SWCCompartmentKind::Soma => self.soma.push_str(string),
-            SWCCompartmentKind::Dendrite => self.dendrite.push_str(string),
-            SWCCompartmentKind::ApicalDendrite => self.apicaldendrite.push_str(string),
-            SWCCompartmentKind::Undefined => self.undefined.push_str(string),
-            SWCCompartmentKind::Custom => self.custom.push_str(string),
+    impl ToDot for VertexConfigFormatter {
+        /// Get node configuration in DOT language
+        fn to_dot(&self, leading_newline: bool, indent: Indent) -> String {
+            let mut full_config_string =
+                StringBuffer::new(leading_newline, indent, self.len() + 64);
+
+            for config_string in self.vertex_config_strings.values() {
+                if config_string.len() > 0 {
+                    // Opening brace on a new line
+                    full_config_string.newline();
+                    full_config_string.push_str("{");
+
+                    // Configuration for the current compartment type
+                    full_config_string.push_str(config_string.as_ref());
+
+                    // Closing brace on a new line
+                    full_config_string.newline();
+                    full_config_string.push_str("}");
+                }
+            }
+
+            return full_config_string.to_string();
         }
-    }
-
-    fn weak_push_str_by_kind(&mut self, kind: SWCCompartmentKind, string: &str) {
-        match kind {
-            SWCCompartmentKind::Axon => self.axon.weak_push_str(string),
-            SWCCompartmentKind::Soma => self.soma.weak_push_str(string),
-            SWCCompartmentKind::Dendrite => self.dendrite.weak_push_str(string),
-            SWCCompartmentKind::ApicalDendrite => self.apicaldendrite.weak_push_str(string),
-            SWCCompartmentKind::Undefined => self.undefined.weak_push_str(string),
-            SWCCompartmentKind::Custom => self.custom.weak_push_str(string),
-        }
-    }
-
-    fn len(&self) -> usize {
-        self.axon.len()
-            + self.soma.len()
-            + self.dendrite.len()
-            + self.apicaldendrite.len()
-            + self.undefined.len()
-            + self.custom.len()
-    }
-}
-
-impl ToDot for VertexConfigBuffers {
-    fn to_dot(&self, leading_newline: bool, indent: Indent) -> String {
-        let mut vertex_config_buf = StringBuffer::new(leading_newline, indent, self.len() + 64);
-
-        if self.axon.len() > 0 {
-            vertex_config_buf.push_str("\n");
-            vertex_config_buf.push_str(&get_indent(indent.main));
-            vertex_config_buf.push_str("{");
-            vertex_config_buf.push_str(self.axon.as_ref());
-            vertex_config_buf.push_str("\n");
-            vertex_config_buf.push_str(&get_indent(indent.main));
-            vertex_config_buf.push_str("}");
-        }
-
-        if self.soma.len() > 0 {
-            vertex_config_buf.newline();
-            vertex_config_buf.push_str("{");
-            vertex_config_buf.push_str(self.soma.as_ref());
-            vertex_config_buf.newline();
-            vertex_config_buf.push_str("}");
-        }
-
-        if self.dendrite.len() > 0 {
-            vertex_config_buf.newline();
-            vertex_config_buf.push_str("{");
-            vertex_config_buf.push_str(self.dendrite.as_ref());
-            vertex_config_buf.newline();
-            vertex_config_buf.push_str("}");
-        }
-
-        if self.apicaldendrite.len() > 0 {
-            vertex_config_buf.push_str("\n");
-            vertex_config_buf.push_str(&get_indent(indent.main));
-            vertex_config_buf.push_str("{");
-            vertex_config_buf.push_str(self.apicaldendrite.as_ref());
-            vertex_config_buf.push_str("\n");
-            vertex_config_buf.push_str(&get_indent(indent.main));
-            vertex_config_buf.push_str("}");
-        }
-
-        if self.undefined.len() > 0 {
-            vertex_config_buf.push_str("\n");
-            vertex_config_buf.push_str(&get_indent(indent.main));
-            vertex_config_buf.push_str("{");
-            vertex_config_buf.push_str(self.undefined.as_ref());
-            vertex_config_buf.push_str("\n");
-            vertex_config_buf.push_str(&get_indent(indent.main));
-            vertex_config_buf.push_str("}");
-        }
-
-        if self.custom.len() > 0 {
-            vertex_config_buf.push_str("\n");
-            vertex_config_buf.push_str(&get_indent(indent.main));
-            vertex_config_buf.push_str("{");
-            vertex_config_buf.push_str(self.custom.as_ref());
-            vertex_config_buf.push_str("\n");
-            vertex_config_buf.push_str(&get_indent(indent.main));
-            vertex_config_buf.push_str("}");
-        }
-
-        return vertex_config_buf.to_string();
     }
 }
 
