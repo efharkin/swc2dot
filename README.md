@@ -31,11 +31,13 @@ format](https://graphs.grevian.org/example) supported by
 The command-line interface is very simple:
 
 ```
-swc2dot [OPTIONS] <INPUT> --output <FILE>
+swc2dot [OPTIONS] <INPUT>
 ```
 
-`<INPUT>` should be a neuron morphology in SWC format, and `<FILE>` will be the
-name of the resulting DOT file (recommended extension `.gv` or `.dot`).
+`<INPUT>` should be the name of a file containing a neuron morphology in SWC
+format. By default, the output is placed in a file called `<INPUT>.dot`, but
+the name of the output file can also be specified manually with the `--output`
+flag.
 
 See `swc2dot --help` for more information.
 
@@ -66,10 +68,10 @@ contents of the file might look something like this:
 
 The SWC morphology can be converted to DOT with the following swc2dot command:
 ```bash
-$ swc2dot morphology.swc --output morphological_graph.dot
+$ swc2dot morphology.swc
 ```
 
-The result is placed in `morphological_graph.dot` and looks something like this:
+The result is placed in `morphology.dot` and looks something like this:
 ```dot
 graph{
     {
@@ -109,7 +111,7 @@ is connected to nodes `2`, `3`, `4`, `14`, etc.).
 
 We can visualize the morphological graph using any program that supports DOT
 format. Example using Graphviz's neato (`neato -o example.png -Tpng
-morphological_graph.dot`):
+morphology.dot`):
 
 ![Example morphological graph](doc/example.png)
 
