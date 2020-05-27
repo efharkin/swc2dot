@@ -7,7 +7,7 @@ mod components;
 mod writer;
 mod config;
 
-use cli_parser::get_cli_arguments;
+use cli_parser::{get_cli_arguments, get_filename_without_extension};
 use swc_parser::parse_file;
 use components::Graph;
 use writer::{ConfiguredToDot, Indent};
@@ -26,10 +26,24 @@ fn main() {
         None => {},
     }
 
-    let swcneuron = parse_file(cli_matches.value_of("INPUT").expect("Could not get input.").to_string());
+    let input_file_name = cli_matches.value_of("INPUT")
+        .expect("Required argument INPUT is missing.").to_string();
+    let swcneuron = parse_file(input_file_name.clone());
     let graphneuron = Graph::from(swcneuron);
 
-    let mut f = File::create(cli_matches.value_of("output").expect("Could not get output.")).expect("Could not create output file.");
+    // Get the name of the output file
+    // Fall back to the name of the input file with .dot suffix if none is provided.
+    let mut output_file_name: String;
+    match cli_matches.value_of("output") {
+        Some(file_name) => output_file_name = file_name.to_string(),
+        None => {
+            output_file_name = get_filename_without_extension(input_file_name);
+            output_file_name.push_str(".dot");
+        }
+    }
+
+    let mut f = File::create(&output_file_name)
+        .expect(&format!("Could not create output file {}.", &output_file_name));
     f.write(&graphneuron.to_dot(false, Indent::flat(0), &config).into_bytes());
     f.flush();
 }
