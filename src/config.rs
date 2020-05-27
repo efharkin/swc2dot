@@ -3,11 +3,17 @@ use std::fs::read_to_string;
 use linked_hash_map::{Entries, LinkedHashMap};
 use yaml_rust::{yaml::Yaml, YamlLoader};
 
-use crate::writer::{ToDot, Indent, StringBuffer};
 use crate::swc_parser::SWCCompartmentKind;
+use crate::writer::{Indent, StringBuffer, ToDot};
 
-static OPTION_GROUPS: &'static [&'static str] =
-    &["soma", "axon", "dendrite", "apicaldendrite", "undefined", "custom"];
+static OPTION_GROUPS: &'static [&'static str] = &[
+    "soma",
+    "axon",
+    "dendrite",
+    "apicaldendrite",
+    "undefined",
+    "custom",
+];
 
 pub struct Config {
     option_groups: LinkedHashMap<&'static str, ConfigOptionGroup>,
@@ -45,7 +51,6 @@ impl Config {
             SWCCompartmentKind::Undefined => &self.option_groups["undefined"],
             SWCCompartmentKind::Custom => &self.option_groups["custom"],
         }
-
     }
 
     /// Load the contents of a file as a Yaml object.
@@ -187,7 +192,7 @@ impl ToDot for ConfigOptionGroup {
         let (key, val) = options_iterator.next().unwrap();
         match val {
             Some(val) => config_string.push_str(&format!("{}={}", key, val)),
-            None => config_string.push_str(&key)
+            None => config_string.push_str(&key),
         }
 
         // All subsequent options
@@ -195,7 +200,7 @@ impl ToDot for ConfigOptionGroup {
             config_string.push_str(",");
             match val {
                 Some(val) => config_string.push_str(&format!("{}={}", key, val)),
-                None => config_string.push_str(&key)
+                None => config_string.push_str(&key),
             }
         }
 

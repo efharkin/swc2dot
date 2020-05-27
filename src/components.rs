@@ -1,12 +1,12 @@
+use std::collections::{btree_map::Iter, BTreeMap};
 use std::convert::From;
-use std::collections::{BTreeMap, btree_map::Iter};
 
-use crate::swc_parser::{SWCNeuron, SWCCompartment, SWCCompartmentKind};
+use crate::swc_parser::{SWCCompartment, SWCCompartmentKind, SWCNeuron};
 
 #[derive(Clone)]
 pub struct Vertex {
     data: SWCCompartment,
-    children: Vec<usize>
+    children: Vec<usize>,
 }
 
 impl Vertex {
@@ -35,13 +35,13 @@ impl From<SWCCompartment> for Vertex {
     fn from(compartment: SWCCompartment) -> Vertex {
         Vertex {
             data: compartment,
-            children: Vec::<usize>::with_capacity(4)
+            children: Vec::<usize>::with_capacity(4),
         }
     }
 }
 
 pub struct Graph {
-    vertices: BTreeMap<usize, Vertex>
+    vertices: BTreeMap<usize, Vertex>,
 }
 
 impl Graph {
@@ -63,9 +63,9 @@ impl Graph {
 }
 
 impl From<SWCNeuron> for Graph {
-   fn from(neuron: SWCNeuron) -> Graph {
+    fn from(neuron: SWCNeuron) -> Graph {
         let mut graph = Graph {
-            vertices: BTreeMap::<usize, Vertex>::new()
+            vertices: BTreeMap::<usize, Vertex>::new(),
         };
 
         for (_, compartment) in neuron.iter() {
@@ -83,7 +83,7 @@ impl From<SWCNeuron> for Graph {
                     // Add vertex as a child of its parent.
                     let parent = graph.vertices.get_mut(&parent_id).unwrap();
                     parent.add_child(&vertex);
-                },
+                }
                 None => {}
             }
 
@@ -92,7 +92,7 @@ impl From<SWCNeuron> for Graph {
         }
 
         return graph;
-   }
+    }
 }
 
 /// A tree of height 1.
@@ -101,7 +101,7 @@ impl From<SWCNeuron> for Graph {
 #[derive(Clone)]
 pub struct ShortTree {
     root_id: usize,
-    child_ids: Vec<usize>
+    child_ids: Vec<usize>,
 }
 
 impl ShortTree {
@@ -118,7 +118,7 @@ impl From<Vertex> for ShortTree {
     fn from(vertex: Vertex) -> ShortTree {
         ShortTree {
             root_id: vertex.get_id(),
-            child_ids: vertex.get_child_ids().clone()
+            child_ids: vertex.get_child_ids().clone(),
         }
     }
 }
@@ -126,14 +126,14 @@ impl From<Vertex> for ShortTree {
 #[derive(Clone)]
 pub struct ShortTreeIter {
     trees: Vec<ShortTree>,
-    ptr: usize
+    ptr: usize,
 }
 
 impl ShortTreeIter {
     fn new(trees: Vec<ShortTree>) -> ShortTreeIter {
         ShortTreeIter {
             trees: trees,
-            ptr: 0
+            ptr: 0,
         }
     }
 }
