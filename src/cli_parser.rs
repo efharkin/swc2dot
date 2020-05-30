@@ -2,7 +2,7 @@ use clap::{App, Arg, ArgMatches};
 
 pub fn get_cli_arguments<'a>() -> ArgMatches<'a> {
     App::new("swc2dot")
-        .version("0.1.1")
+        .version("0.1.2")
         .author("Emerson Harkin <emerson.f.harkin@gmail.com>")
         .about("Convert SWC neuron morphologies to DOT graph language.")
         .arg(
