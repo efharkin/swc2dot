@@ -34,23 +34,24 @@ fn parse_lines(reader: BufReader<File>) -> Result<SWCNeuron, String> {
 }
 
 fn parse_line(line: String) -> Result<SWCLine, String> {
-    let parse_result: SWCLine;
+    let trimmed_line = line.trim();  // Remove leading and trailing whitespace.
 
-    if line.len() > 0 {
+    let parse_result: SWCLine;
+    if trimmed_line.is_empty() {
+        // Line is empty.
+        parse_result = SWCLine::Blank;
+    } else {
         // Line is not empty.
 
-        if line.chars().next().unwrap() == '#' {
+        if trimmed_line.chars().next().unwrap() == '#' {
             // Parse line as a comment, causing parse_result to be
             // SWCLine::Comment
-            parse_result = SWCLine::Comment(line);
+            parse_result = SWCLine::Comment(trimmed_line.to_string());
         } else {
             // Parse line as a compartment, causing parse_result to be
             // SWCLine::SWCCompartment
-            parse_result = SWCLine::SWCCompartment(parse_line_as_compartment(line)?);
+            parse_result = SWCLine::SWCCompartment(parse_line_as_compartment(trimmed_line.to_string())?);
         }
-    } else {
-        // Line is empty.
-        parse_result = SWCLine::Blank;
     }
 
     return Ok(parse_result);
