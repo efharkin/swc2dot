@@ -25,7 +25,8 @@ fn parse_lines(reader: BufReader<File>) -> Result<SWCNeuron, String> {
     for line in reader.lines() {
         match parse_line(line.expect("Could not read line."))? {
             SWCLine::SWCCompartment(compartment) => neuron.try_insert(compartment)?,
-            SWCLine::Comment(_) => {}
+            SWCLine::Comment(_) => {},
+            SWCLine::Blank => {}
         }
     }
 
@@ -33,16 +34,23 @@ fn parse_lines(reader: BufReader<File>) -> Result<SWCNeuron, String> {
 }
 
 fn parse_line(line: String) -> Result<SWCLine, String> {
-    let mut parse_result: SWCLine;
+    let parse_result: SWCLine;
 
-    if line.chars().next().unwrap() == '#' {
-        // Parse line as a comment, causing parse_result to be
-        // SWCLine::Comment
-        parse_result = SWCLine::Comment(line);
+    if line.len() > 0 {
+        // Line is not empty.
+
+        if line.chars().next().unwrap() == '#' {
+            // Parse line as a comment, causing parse_result to be
+            // SWCLine::Comment
+            parse_result = SWCLine::Comment(line);
+        } else {
+            // Parse line as a compartment, causing parse_result to be
+            // SWCLine::SWCCompartment
+            parse_result = SWCLine::SWCCompartment(parse_line_as_compartment(line)?);
+        }
     } else {
-        // Parse line as a compartment, causing parse_result to be
-        // SWCLine::SWCCompartment
-        parse_result = SWCLine::SWCCompartment(parse_line_as_compartment(line)?);
+        // Line is empty.
+        parse_result = SWCLine::Blank;
     }
 
     return Ok(parse_result);
@@ -51,6 +59,7 @@ fn parse_line(line: String) -> Result<SWCLine, String> {
 enum SWCLine {
     SWCCompartment(SWCCompartment),
     Comment(String),
+    Blank,
 }
 
 fn parse_line_as_compartment(line: String) -> Result<SWCCompartment, String> {
