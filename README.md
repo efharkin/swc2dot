@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/efharkin/swc2dot.svg?token=w2Bu6kMAWz66WkG555u7&branch=master)](https://travis-ci.com/efharkin/swc2dot)
+[![Build Status](https://travis-ci.com/efharkin/swc2dot.svg?token=w2Bu6kMAWz66WkG555u7&branch=master)](https://travis-ci.com/efharkin/swc2dot) [![codecov](https://codecov.io/gh/efharkin/swc2dot/branch/master/graph/badge.svg)](https://codecov.io/gh/efharkin/swc2dot)
 
 # swc2dot
 
