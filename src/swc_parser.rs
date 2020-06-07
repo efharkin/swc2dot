@@ -263,6 +263,47 @@ impl SWCNeuron {
     }
 }
 
+#[cfg(test)]
+mod swcneuron_tests {
+    use super::*;
+
+    #[test]
+    fn insert_compartments_with_unique_ids() {
+        // Create a neuron and insert a single root compartment.
+        let mut neuron = SWCNeuron::new();
+        let mut compartment = SWCCompartment::new(0, SWCCompartmentKind::Soma, Point{x: 0.0, y: 0.0, z: 0.0}, 0.5, None);
+        neuron.try_insert(compartment.clone()).expect("Could not insert root node.");
+
+        for compartment_id in [2, 5, 4, 7, 88, 903].iter() {
+            compartment.parent_id = Some(0);
+            compartment.id = *compartment_id;
+            neuron.try_insert(compartment.clone()).expect(&format!("Could not insert compartment with unique id {}", compartment_id));
+        }
+    }
+
+    #[test]
+    fn insert_compartment_with_duplicate_ids_is_error() {
+        // Create a neuron and insert a single root compartment.
+        let mut neuron = SWCNeuron::new();
+        let mut compartment = SWCCompartment::new(1, SWCCompartmentKind::Soma, Point{x: 0.0, y: 0.0, z: 0.0}, 0.5, None);
+        neuron.try_insert(compartment.clone()).expect("Could not insert root node.");
+
+        // Change all compartment attributes except id.
+        compartment.radius += 1.0;
+        compartment.position.x += 1.0;
+        compartment.position.y += 1.0;
+        compartment.position.z += 1.0;
+        compartment.kind = SWCCompartmentKind::ApicalDendrite;
+        compartment.parent_id = Some(0);
+
+        // Since id is still the same, inserting compartment again is an error.
+        match neuron.try_insert(compartment.clone()) {
+            Ok(_) => assert!(false, "Inserting compartments with the same id should be an error"),
+            Err(msg) => assert!(msg.to_lowercase().contains("more than one compartment with id 1"))
+        }
+    }
+}
+
 #[derive(Copy, Clone)]
 pub struct SWCCompartment {
     pub id: usize,
