@@ -120,6 +120,120 @@ fn parse_line_as_compartment(line: String) -> Result<SWCCompartment, String> {
     ));
 }
 
+#[cfg(test)]
+mod parse_line_as_compartment_tests {
+    use super::*;
+
+    /// An SWC line should have exactly seven space-delimited items. These
+    /// tests ensure that lines are parsed as the correct length.
+    mod line_length_tests {
+        use super::*;
+
+        #[test]
+        fn too_many_space_delimited_items_raises_error() {
+            let line = "2 3 4 5 6 7 1 1".to_string();
+            match parse_line_as_compartment(line) {
+                Ok(_) => assert!(false),
+                Err(msg) => assert!(msg.contains("got 8 items"))
+            }
+        }
+
+        #[test]
+        fn too_few_space_delimited_items_raises_error() {
+            let line = "2 3 4 5 6 7".to_string();
+            match parse_line_as_compartment(line) {
+                Ok(_) => assert!(false),
+                Err(msg) => assert!(msg.contains("got 6 items"))
+            }
+        }
+
+        #[test]
+        fn leading_space_does_not_trigger_error() {
+            let line = " 2 3 4 5 6 7 1".to_string();
+            match parse_line_as_compartment(line) {
+                Ok(_) => assert!(true),
+                Err(_) => assert!(false)
+            }
+        }
+
+        #[test]
+        fn trailing_space_does_not_trigger_error() {
+            let line = "2 3 4 5 6 7 1 ".to_string();
+            match parse_line_as_compartment(line) {
+                Ok(_) => assert!(true),
+                Err(_) => assert!(false)
+            }
+        }
+
+        #[test]
+        fn extra_infix_spaces_do_not_trigger_error() {
+            let line = "2 3   4  5 6     7 1".to_string();
+            match parse_line_as_compartment(line) {
+                Ok(_) => assert!(true),
+                Err(_) => assert!(false)
+            }
+        }
+    }
+
+    #[cfg(test)]
+    mod id {
+        use super::*;
+
+        #[test]
+        fn first_item_is_id () {
+            let trailing_values = " 2 3 4 5 6 7";
+            for id in [10, 645, 938274].iter() {
+                let mut swc_line = id.to_string();
+                swc_line.push_str(trailing_values);
+                let swc_compartment = parse_line_as_compartment(swc_line).unwrap();
+                assert_eq!(swc_compartment.id, *id);
+            }
+        }
+
+        #[test]
+        fn position() {
+            for (x, y, z) in [(1.2, 2.2, 3.7), (4.5, 5.5, 6.5), (-32.0, 125.333, -3.4)].iter() {
+                let swc_line = format!("10 1 {} {} {} 5 6", x, y, z);
+                let swc_compartment = parse_line_as_compartment(swc_line).unwrap();
+                assert_eq!(swc_compartment.position, Point{x: *x, y: *y, z: *z});
+            }
+        }
+
+        #[test]
+        fn radius() {
+            for rad in [4.3, 7.7, 9.9, 3.2].iter() {
+                let swc_line = format!("10 1 3 3 3 {} 6", rad);
+                let swc_compartment = parse_line_as_compartment(swc_line).unwrap();
+                assert_eq!(swc_compartment.radius, *rad);
+            }
+        }
+
+        #[test]
+        fn positive_last_item_is_parent() {
+            for parent_id in [2, 54, 893].iter() {
+                let swc_line = format!("1000 1 3 3 3 3 {}", parent_id);
+                let swc_compartment = parse_line_as_compartment(swc_line).unwrap();
+                match swc_compartment.parent_id {
+                    Some(parent) => assert_eq!(parent, *parent_id),
+                    None => assert!(false, "Failed because no parent was found.")
+                }
+            }
+        }
+
+        #[test]
+        fn negative_last_item_means_no_parent() {
+            for parent_id in [-244, -2, -1].iter() {
+                let swc_line = format!("1 1 3 3 3 3 {}", parent_id);
+                let swc_compartment = parse_line_as_compartment(swc_line.clone()).unwrap();
+                match swc_compartment.parent_id {
+                    Some(_) => assert!(false, "A negative parent is no parent at all! Parent is not None for swc string `{}`", swc_line),
+                    None => assert!(true)
+                }
+            }
+        }
+    }
+}
+
 pub struct SWCNeuron {
     compartments: BTreeMap<usize, SWCCompartment>,
 }
@@ -176,7 +290,7 @@ impl SWCCompartment {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq, Debug)]
 pub struct Point {
     pub x: f64,
     pub y: f64,
