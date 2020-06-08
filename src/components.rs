@@ -40,6 +40,45 @@ impl From<SWCCompartment> for Vertex {
     }
 }
 
+#[cfg(test)]
+mod vertex_from_swccompartment_tests {
+    use super::*;
+
+    #[test]
+    fn id() {
+        let swc_compartment = get_test_swccompartment(1, None);
+        let vertex = Vertex::from(swc_compartment);
+        assert_eq!(vertex.get_id(), swc_compartment.id);
+    }
+
+    #[test]
+    fn kind() {
+        let swc_compartment = get_test_swccompartment(1, None);
+        let vertex = Vertex::from(swc_compartment);
+        assert_eq!(vertex.get_kind(), swc_compartment.kind);
+    }
+
+    #[test]
+    fn parent_id() {
+        for parent_id in [None, Some(1), Some(7)].iter() {
+            let swc_compartment = get_test_swccompartment(10, *parent_id);
+            let vertex = Vertex::from(swc_compartment);
+            assert_eq!(vertex.get_parent_id(), swc_compartment.parent_id);
+        }
+    }
+
+    fn get_test_swccompartment(id: usize, parent_id: Option<usize>) -> SWCCompartment {
+        use crate::swc_parser::Point;
+        SWCCompartment::new(
+            id,
+            SWCCompartmentKind::Soma,
+            Point{x: 1.0, y: 1.0, z: 1.0},
+            1.0,
+            parent_id
+        )
+    }
+}
+
 pub struct Graph {
     vertices: BTreeMap<usize, Vertex>,
 }
