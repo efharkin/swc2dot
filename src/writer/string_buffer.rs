@@ -313,8 +313,16 @@ impl Indent {
     /// assert_eq!(absolute_indent, relative_indent);
     /// ```
     pub fn relative_first_line(first_line_level: i8, main_indent_level: u8) -> Indent {
+        if (first_line_level as i32) + (main_indent_level as i32) < 0 {
+            panic!(
+                "Minimum allowed relative first line indent level for main indent level {} is -{}, got {}",
+                main_indent_level,
+                main_indent_level,
+                first_line_level
+            );
+        }
         Indent {
-            first: (main_indent_level as i16 - first_line_level as i16) as u8,
+            first: (main_indent_level as i16 + first_line_level as i16) as u8,
             main: main_indent_level
         }
     }
@@ -344,6 +352,55 @@ impl Indent {
             first: 0,
             main: 0
         }
+    }
+}
+
+#[cfg(test)]
+mod indent_tests {
+    use super::*;
+
+    #[test]
+    fn zero() {
+        let indent = Indent::zero();
+        assert_eq!(indent.first, 0);
+        assert_eq!(indent.main, 0);
+    }
+
+    #[test]
+    fn flat() {
+        for indent_level in [0, 4, 89, 223].iter() {
+            let indent = Indent::flat(*indent_level);
+            assert_eq!(indent.first, *indent_level);
+            assert_eq!(indent.main, *indent_level);
+        }
+    }
+
+    #[test]
+    fn absolute_first_line() {
+        for (first_indent_level, main_indent_level) in [(0, 0), (0, 8), (43, 0), (76, 20)].iter() {
+            let indent = Indent::absolute_first_line(*first_indent_level, *main_indent_level);
+            assert_eq!(indent.first, *first_indent_level);
+            assert_eq!(indent.main, *main_indent_level);
+        }
+    }
+
+    #[test]
+    fn relative_first_line() {
+        for (first_indent_level, main_indent_level) in [(0, 0), (-2, 5), (7, 9)].iter() {
+            let indent = Indent::relative_first_line(*first_indent_level, *main_indent_level);
+            assert_eq!(
+                indent.first,
+                (*first_indent_level + (*main_indent_level as i8)) as u8
+            );
+            assert_eq!(indent.main, *main_indent_level as u8);
+        }
+    }
+
+    #[test]
+    #[should_panic]
+    fn invalid_relative_first_line_panics() {
+        let indent = Indent::relative_first_line(-2, 1);
+        println!("Expected invalid relative indent with negative first line to panic, got {:?} indent instead", indent);
     }
 }
 
