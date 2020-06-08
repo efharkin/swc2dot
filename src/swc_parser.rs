@@ -57,10 +57,61 @@ fn parse_line(line: String) -> Result<SWCLine, String> {
     return Ok(parse_result);
 }
 
+#[derive(Debug, PartialEq)]
 enum SWCLine {
     SWCCompartment(SWCCompartment),
     Comment(String),
     Blank,
+}
+
+#[cfg(test)]
+mod parse_line_tests {
+    use super::*;
+
+    #[test]
+    fn empty_line() {
+        assert_eq!(parse_line("".to_string()).unwrap(), SWCLine::Blank);
+    }
+
+    #[test]
+    fn line_with_only_spaces() {
+        assert_eq!(parse_line("    ".to_string()).unwrap(), SWCLine::Blank);
+    }
+
+    #[test]
+    fn comment_line() {
+        let comment_string = "# Comment contents".to_string();
+        let expected_minimum_contents = "Comment contents".to_string();
+        match parse_line(comment_string.clone()).unwrap() {
+            SWCLine::Comment(contents) => assert!(
+                contents.contains(&expected_minimum_contents),
+                "Expected parsed comment string `{}` to contain `{}`, got {} instead",
+                comment_string,
+                expected_minimum_contents,
+                contents
+            ),
+            _ => assert!(
+                false,
+                "Comment string `{}` not parsed as a comment",
+                comment_string
+            ),
+        }
+    }
+
+    #[test]
+    fn swc_compartment() {
+        let compartment_line = "2 3 4 5 6 7 1".to_string();
+        let expected_compartment = parse_line_as_compartment(compartment_line.clone())
+            .expect("Broken test, could not parse compartment line.");
+        match parse_line(compartment_line.clone()).unwrap() {
+            SWCLine::SWCCompartment(compartment) => assert_eq!(compartment, expected_compartment),
+            _ => assert!(
+                false,
+                "Compartment string {} not parsed as a compartment",
+                compartment_line
+            ),
+        }
+    }
 }
 
 fn parse_line_as_compartment(line: String) -> Result<SWCCompartment, String> {
@@ -304,7 +355,7 @@ mod swcneuron_tests {
     }
 }
 
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub struct SWCCompartment {
     pub id: usize,
     pub kind: SWCCompartmentKind,
