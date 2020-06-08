@@ -26,6 +26,54 @@ impl ToDot for Vertex {
     }
 }
 
+#[cfg(test)]
+mod vertex_todot_tests {
+    use super::*;
+
+    #[test]
+    fn formatted_id_appears_in_output() {
+        let vertex = get_test_vertex();
+        assert!(vertex
+            .to_dot(false, Indent::zero())
+            .contains(&format!("{}; ", vertex.get_id())));
+    }
+
+    #[test]
+    fn leading_newline_zero_indent() {
+        let vertex = get_test_vertex();
+        assert_eq!(
+            vertex.to_dot(true, Indent::zero()).chars().next().unwrap(),
+            '\n',
+            "Expected first char to be newline when argument `newline=true`"
+        )
+    }
+
+    #[test]
+    fn no_leading_newline_zero_indent() {
+        let vertex = get_test_vertex();
+        assert!(
+            vertex.to_dot(false, Indent::zero()).chars().next().unwrap() != '\n',
+            "Expected first char to not be newline when arguemnt `newline=false`"
+        )
+    }
+
+    fn get_test_vertex() -> Vertex {
+        use crate::swc_parser::{Point, SWCCompartment};
+        let vertex = Vertex::from(SWCCompartment::new(
+            64,
+            SWCCompartmentKind::Dendrite,
+            Point {
+                x: 1.0,
+                y: 1.0,
+                z: 1.0,
+            },
+            1.0,
+            None,
+        ));
+        return vertex;
+    }
+}
+
 static GRAPH_STRING_MAX_BUFSIZE: usize = 5242880;
 
 /// Get a configured `String` representation of an object in DOT format.
