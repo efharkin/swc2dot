@@ -15,7 +15,7 @@ jobs:
         - RUSTFLAGS="-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off -Zpanic_abort_tests -Cpanic=abort"
         - RUSTDOCFLAGS="-Cpanic=abort"
       before_script: |
-        find . \( -name "swc2dot*.gc*" \) -print0 | xargs -0 rm
+        find . \( -name "swc2dot*.gc*" \) -exec rm {} \;
       script:
         - cargo build --verbose $CARGO_OPTIONS
         - cargo test --verbose $CARGO_OPTIONS
