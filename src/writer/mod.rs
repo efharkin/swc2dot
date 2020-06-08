@@ -222,6 +222,23 @@ mod vertex_config_formatter {
             return full_config_string.to_string();
         }
     }
+
+    #[cfg(test)]
+    mod vertexconfigformatter_todot_tests {
+        use super::*;
+
+        #[test]
+        fn weak_push_yields_empty_string() {
+            let mut formatter = VertexConfigFormatter::new(true, Indent::flat(1), 1024);
+
+            // Push content that does not need to be printed.
+            for kind in SWCCompartmentKind::iter() {
+                formatter.weak_push_config_str(kind, "unnecessary content");
+            }
+
+            assert_eq!(formatter.to_dot(true, Indent::flat(1)), "");
+        }
+    }
 }
 
 impl ToDot for ShortTree {
